@@ -1,0 +1,6 @@
+
+CREATE TABLE posts (
+    id SERIAL PRIMARY KEY,
+    content VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

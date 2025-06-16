@@ -1,0 +1,12 @@
+{
+    "postgres.connections": [
+      {
+        "host": "localhost",
+        "port": 5001,
+        "user": "postgres",
+        "password": "abdul12345",
+        "database": "socialMediaApp",
+        "name": "Social Media DB" 
+      }
+    ]
+  }
