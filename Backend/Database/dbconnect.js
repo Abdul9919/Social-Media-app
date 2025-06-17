@@ -1,4 +1,5 @@
 const { Pool } = require('pg');
+const fs = require('fs')
 const pool = new Pool({
   user: process.env.DB_USER,
   host: process.env.DB_HOST,
@@ -8,45 +9,23 @@ const pool = new Pool({
 });
 
 const initDB = async () => {
-  const client = await pool.connect();
   try {
-    await client.query('BEGIN');
-    
-    // Create users table first (since posts references it)
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
-        username VARCHAR(50) UNIQUE NOT NULL,
-        email VARCHAR(255) UNIQUE NOT NULL,
-        password VARCHAR(255) NOT NULL,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
+    // Check if the SQL file exists
+    const sqlFilePath = './Database/database.sql';
+    if (!fs.existsSync(sqlFilePath)) {
+      throw new Error(`SQL file not found: ${sqlFilePath}`);
+    }
 
-    // Create posts table with proper foreign key reference
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS posts (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        content VARCHAR(255) NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
+    // Read the SQL file
+    const sql = fs.readFileSync(sqlFilePath, 'utf8');
 
-    // Create index (only once)
-    await client.query(`
-      CREATE INDEX IF NOT EXISTS posts_user_id_idx ON posts(user_id);
-    `);
-
-    await client.query('COMMIT');
+    // Execute the SQL commands
+    await pool.query(sql);
     console.log('Database tables initialized successfully');
-  } catch (error) { 
-    await client.query('ROLLBACK');
+  }
+  catch (error) {
     console.error('Error initializing database tables:', error);
     throw error;
-  } finally {
-    client.release();
   }
 }
 

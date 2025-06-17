@@ -37,7 +37,7 @@ const registerUser = async (req, res) => {
 
 const loginUser = async (req, res) => {
     try {
-        const { email, password} = req.body;
+        const { email, password } = req.body;
         if (!email || !password) {
             return res.status(409).json({ message: 'All fields are required' });
         }
@@ -61,13 +61,37 @@ const loginUser = async (req, res) => {
         });
     } catch (error) {
         console.error('Error logging in user:', error);
-        res.status(500).json({ message: 'Internal server error' });       
+        res.status(500).json({ message: 'Internal server error' });
     }
 }
 
-const getUsers = async (req,res) => {
+const getUsers = async (req, res) => {
     const allUsers = await pool.query('SELECT * FROM users')
     res.json(allUsers)
 }
 
-module.exports = { registerUser, loginUser, getUsers };
+const changeUserInfo = async (req, res) => {
+    const userId = req.user.id;
+    const { username, email, password } = req.body;
+    const selectedUser = await pool.query('SELECT * FROM users WHERE id = $1', [userId])
+    if (!username) {
+        return res.status(400).json({ message: 'username is missing' })
+    }
+    if (!email) {
+        return res.status(400).json({ message: 'email is missing' })
+    }
+    if (!password) {
+        return res.status(400).json({ message: 'password is missing' })
+    }
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+    if (selectedUser.rows.length === 0) {
+        return res.status(404).json({ message: 'User does not exist' })
+    }
+    const updatedUser = await pool.query('UPDATE users SET username = $1, email = $2, password = $3 WHERE id = $4 RETURNING *',
+        [username, email, hashedPassword, userId]
+    );
+    res.status(200).json(updatedUser);
+}
+
+module.exports = { registerUser, loginUser, getUsers, changeUserInfo };
