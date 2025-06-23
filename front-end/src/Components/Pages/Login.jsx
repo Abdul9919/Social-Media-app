@@ -1,0 +1,53 @@
+import React from 'react'
+import { useState, useContext } from 'react'
+import axios from 'axios'
+import { AuthContext } from '../../Contexts/AuthContext'
+import { useNavigate } from 'react-router-dom'
+
+
+export const Login = () => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const apiUrl = import.meta.env.VITE_API_URL;
+  const { login, isAuthenticated } = useContext(AuthContext);
+
+  const navigate = useNavigate();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await axios.post(`${apiUrl}/api/users/login`, { email, password });
+      console.log(res.data)
+      if (res.data && res.data.id) {
+        login(res.data.token, {
+          id: res.data.id,
+          username: res.data.username,
+          email: res.data.email
+        });
+      } else {
+        console.error('Invalid response format');
+      }
+      if (isAuthenticated) {
+      navigate('/');
+      }
+
+    } catch (error) {
+      console.error('Login error:', error);
+      alert('Login failed. Please check your credentials.');
+    }
+  }
+  return (
+    <div className='bg-black w-screen h-screen flex items-center justify-center'>
+      <div><img src="/assets/loginImage.png" alt="" className='w-[552px] h-[450px] mr-[5rem]' /></div>
+      <div className='text-white'>
+        <img src="/assets/chatterly.png" alt="" className='w-[250px] h-[100px] m-10' />
+        <form action="" onSubmit={handleSubmit} className='flex flex-col items-center justify-center'>
+          <input type="email" name="email" value={email} onChange={(e) => { setEmail(e.target.value) }} id="email" placeholder='Email' className='bg-zinc-900 mb-2 border-1 rounded-sm border-zinc-700 pl-4 py-2 pr-[8rem] text-sm' />
+          <input type="password" name="password" value={password} onChange={(e) => { setPassword(e.target.value) }} id="password" placeholder='Password' className='bg-zinc-900 mb-5 border-1 rounded-sm border-zinc-700 pl-4 py-2 pr-[8rem] text-sm' />
+          <button type="submit" className='bg-[#4F46E5] text-white px-6 py-2 rounded-md hover:bg-[#4338CA] transition duration-300 ease-in-out'>
+            Sign in
+          </button>
+        </form>
+      </div>
+    </div>
+  )
+}
