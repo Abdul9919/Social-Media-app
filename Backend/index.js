@@ -10,7 +10,7 @@ const commentRoutes = require('./routes/commentRoutes.js')
 
 app.use(express.json());
 app.use(cors());
-
+ 
 app.use('/api/users', userRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/comments', commentRoutes);

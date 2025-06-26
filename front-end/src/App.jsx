@@ -5,6 +5,7 @@ import { Login } from './Components/Pages/Login'
 import {Routes, Route} from 'react-router-dom'
 import { AuthProvider } from './Contexts/AuthContext'
 import  PrivateRoute from './Components/PrivateRoute'
+import { Register } from './Components/Pages/Register'
 
 function App() {return (
   <AuthProvider>
@@ -15,6 +16,7 @@ function App() {return (
       </PrivateRoute>
     } />
     <Route path="/login" element={<Login />} />
+    <Route path="/register" element={<Register />} />
   </Routes>
   </AuthProvider>
   )

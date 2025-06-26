@@ -18,7 +18,7 @@ const registerUser = async (req, res) => {
         if (existingUsername.rows.length > 0) {
             return res.status(409).json({ message: 'Username already exists' });
         }
-        const newUser = await pool.query('INSERT INTO users (username, email, password) VALUES ($1, $2, $3)', [username, email, hashedPassword]);
+        const newUser = await pool.query('INSERT INTO users (username, email, password) VALUES ($1, $2, $3) RETURNING *', [username, email, hashedPassword]);
         const token = jwt.sign(
             { id: newUser.rows[0].id },
             process.env.JWT_SECRET,
@@ -57,6 +57,7 @@ const loginUser = async (req, res) => {
         res.status(200).json({
             id: checkEmail.rows[0].id,
             username: checkEmail.rows[0].username,
+            email: checkEmail.rows[0].email,
             token
         });
     } catch (error) {
@@ -65,9 +66,14 @@ const loginUser = async (req, res) => {
     }
 }
 
-const getUsers = async (req, res) => {
-    const allUsers = await pool.query('SELECT * FROM users')
-    res.json(allUsers)
+const getUser = async (req, res) => {
+    const userId = req.user.id
+
+    if (!userId) {
+        return res.status(404).json({ message: 'User not found' });
+    }    
+    const user = await pool.query('SELECT * FROM users WHERE id = $1', [userId])
+    res.json(userId)
 }
 
 const changeUserInfo = async (req, res) => {
@@ -94,4 +100,4 @@ const changeUserInfo = async (req, res) => {
     res.status(200).json(updatedUser);
 }
 
-module.exports = { registerUser, loginUser, getUsers, changeUserInfo };
+module.exports = { registerUser, loginUser, getUser, changeUserInfo };

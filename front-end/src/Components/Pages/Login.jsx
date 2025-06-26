@@ -2,7 +2,7 @@ import React from 'react'
 import { useState, useContext } from 'react'
 import axios from 'axios'
 import { AuthContext } from '../../Contexts/AuthContext'
-import { useNavigate } from 'react-router-dom'
+import { NavLink, useNavigate } from 'react-router-dom'
 
 
 export const Login = () => {
@@ -16,7 +16,6 @@ export const Login = () => {
     e.preventDefault();
     try {
       const res = await axios.post(`${apiUrl}/api/users/login`, { email, password });
-      console.log(res.data)
       if (res.data && res.data.id) {
         login(res.data.token, {
           id: res.data.id,
@@ -27,7 +26,7 @@ export const Login = () => {
         console.error('Invalid response format');
       }
       if (isAuthenticated) {
-      navigate('/');
+        navigate('/');
       }
 
     } catch (error) {
@@ -47,6 +46,19 @@ export const Login = () => {
             Sign in
           </button>
         </form>
+        <div className='flex items-center my-4'>
+          <div className='flex-grow h-px bg-zinc-700'></div>
+          <div className='mx-4 text-gray-500 text-sm'>
+            OR
+          </div>
+          <div className='flex-grow h-px bg-zinc-700'></div>
+        </div>
+        <div className='flex items-center justify-center gap-2 mb-4'>
+          <div>Dont have an account?</div>
+          <NavLink to="/register" className='text-[#4F46E5] hover:text-[#4338CA] transition duration-300 ease-in-out text-sm'>
+            Sign Up
+          </NavLink>
+        </div>
       </div>
     </div>
   )
