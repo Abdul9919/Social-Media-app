@@ -8,12 +8,14 @@ import { NavLink, useNavigate } from 'react-router-dom'
 export const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
   const apiUrl = import.meta.env.VITE_API_URL;
   const { login, isAuthenticated } = useContext(AuthContext);
 
   const navigate = useNavigate();
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError(null)
     try {
       const res = await axios.post(`${apiUrl}/api/users/login`, { email, password });
       if (res.data && res.data.id) {
@@ -22,6 +24,7 @@ export const Login = () => {
           username: res.data.username,
           email: res.data.email
         });
+        console.log('Login successful');
       } else {
         console.error('Invalid response format');
       }
@@ -29,14 +32,13 @@ export const Login = () => {
         navigate('/');
       }
 
-    } catch (error) {
-      console.error('Login error:', error);
-      alert('Login failed. Please check your credentials.');
+    } catch (err) {
+        setError(err.response.data.message || 'Invalid email or password');
     }
   }
   return (
     <div className='bg-black w-screen h-screen flex items-center justify-center'>
-      <div><img src="/assets/loginImage.png" alt="" className='w-[552px] h-[450px] mr-[5rem]' /></div>
+      <div><img src="/assets/loginImage.png" alt="" className='hidden lg:block w-[552px] h-[450px] mr-[5rem]' /></div>
       <div className='text-white'>
         <img src="/assets/chatterly.png" alt="" className='w-[250px] h-[100px] m-10' />
         <form action="" onSubmit={handleSubmit} className='flex flex-col items-center justify-center'>
@@ -53,9 +55,10 @@ export const Login = () => {
           </div>
           <div className='flex-grow h-px bg-zinc-700'></div>
         </div>
+        <div className='text-[#FF0000] my-4'>{error}</div>
         <div className='flex items-center justify-center gap-2 mb-4'>
           <div>Dont have an account?</div>
-          <NavLink to="/register" className='text-[#4F46E5] hover:text-[#4338CA] transition duration-300 ease-in-out text-sm'>
+          <NavLink to="/register" className='text-[#4F46E5] hover:text-white transition duration-300 ease-in-out text-sm'>
             Sign Up
           </NavLink>
         </div>

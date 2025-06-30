@@ -6,11 +6,13 @@ import { NavLink, useNavigate } from 'react-router-dom'
 export const Register = () => {
     const navigate = useNavigate();
     const [username, setUsername] = useState('');
+    const [error, setError] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setError(null)
         try {
             const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/users/register`, { username, email, password });
             if (res.data && res.data.id) {
@@ -21,17 +23,17 @@ export const Register = () => {
                 console.error('Invalid response format');
             }
         } catch (error) {
-            console.error('Registration error:', error);
-            alert('Registration failed. Please try again.');
+            setError(error.response.data.message || 'Registration failed. Please try again.');
         }
     }
     return (
         <div className='bg-black w-screen h-screen flex flex-col items-center justify-center'>
-            <div className='flex flex-col items-center mt-[2rem] border-1 border-zinc-700 max-w-[30%] h-[69%]'>
+            <div className='flex flex-col items-center mt-[2rem] lg:border-1 border-zinc-700 max-w-[75%] lg:max-w-[30%] h-[69%]'>
                 <img src="/assets/chatterly.png" alt="" className='w-[200px] h-[65px] m-10' />
                 <div className='max-w-[75%]'>
                     <h6 className='text-zinc-400 font-semibold mb-4'>Sign up to see photos and videos from your friends.</h6>
                 </div>
+                {error ? <div className='text-[#FF0000]'>{error}</div> : null}
                 <div className='flex items-center my-4'>
                     <div className='flex-grow h-px w-[100px] bg-zinc-700'></div>
                     <div className='mx-4 text-gray-500 text-sm'>
@@ -47,7 +49,7 @@ export const Register = () => {
                 </form>
 
             </div>
-            <div className='flex flex-col items-center mt-4 border-1 border-zinc-700 h-[81px] w-[382px]'>
+            <div className='flex flex-col items-center mt-8 lg:border-1 border-zinc-700 h-[81px] w-[382px]'>
                 <div><p className='text-[#F5F5F5] mt-4'>Already have an account?</p></div>
                 <NavLink to="/login" className='text-[#4F46E5] hover:text-[#4338CA] transition duration-300 ease-in-out text-sm'>
                     Log In
