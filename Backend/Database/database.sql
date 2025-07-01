@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS users (
         username VARCHAR(50) UNIQUE NOT NULL,
         email VARCHAR(255) UNIQUE NOT NULL,
         password VARCHAR(255) NOT NULL,
+        profile_picture VARCHAR(255) DEFAULT 'https://res.cloudinary.com/dv9af2izq/image/upload/v1751284227/default-profile-picture_ubue3c.jpg',
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
         );

@@ -22,9 +22,11 @@ export const Login = () => {
         login(res.data.token, {
           id: res.data.id,
           username: res.data.username,
-          email: res.data.email
+          email: res.data.email,
+          profile_picture : res.data.profile_picture
         });
         console.log('Login successful');
+        navigate('/')
       } else {
         console.error('Invalid response format');
       }

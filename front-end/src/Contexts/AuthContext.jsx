@@ -40,6 +40,7 @@ export const AuthProvider = ({ children }) => {
             id: userData.id,
             userName: userData.username,
             email: userData.email,
+            profilePicture: userData.profile_picture, // Ensure profilePicture is set
             token
         });
         setIsAuthenticated(true);

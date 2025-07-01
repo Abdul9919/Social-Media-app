@@ -1,6 +1,8 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { pool } = require('../Database/dbconnect.js');
+const cloudinary = require('../config/cloudinary.js');
+const fs = require('fs/promises');
 
 const registerUser = async (req, res) => {
     try {
@@ -54,6 +56,7 @@ const loginUser = async (req, res) => {
             id: checkEmail.rows[0].id,
             username: checkEmail.rows[0].username,
             email: checkEmail.rows[0].email,
+            profile_picture: checkEmail.rows[0].profile_picture,
             token
         });
     } catch (error) {
@@ -67,9 +70,9 @@ const getUser = async (req, res) => {
 
     if (!userId) {
         return res.status(404).json({ message: 'User not found' });
-    }    
+    }
     const user = await pool.query('SELECT * FROM users WHERE id = $1', [userId])
-    res.json(userId)
+    res.json(user)
 }
 
 const changeUserInfo = async (req, res) => {
@@ -96,4 +99,36 @@ const changeUserInfo = async (req, res) => {
     res.status(200).json(updatedUser);
 }
 
-module.exports = { registerUser, loginUser, getUser, changeUserInfo };
+const uploadProfilePicture = async (req, res) => {
+    const userId = req.user.id;
+    const file = req.file;
+
+    if (!file) {
+        return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    try {
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+        if (!allowedTypes.includes(file.mimetype)) {
+            return res.status(400).json({ message: 'Invalid file type' });
+        }
+        const result = await cloudinary.uploader.upload(file.path, {
+            folder: 'profile_pictures',
+            public_id: userId,
+            overwrite: true
+        });
+
+        await fs.unlink(file.path);
+
+        const updatedUser = await pool.query('UPDATE users SET profile_picture = $1 WHERE id = $2 RETURNING *',
+            [result.secure_url, userId]
+        );
+
+        res.status(200).json(updatedUser.rows[0]);
+    } catch (error) {
+        console.error('Error uploading profile picture:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+}
+
+module.exports = { registerUser, loginUser, getUser, changeUserInfo, uploadProfilePicture };
