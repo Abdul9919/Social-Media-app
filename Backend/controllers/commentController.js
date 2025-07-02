@@ -2,8 +2,10 @@ const {pool} = require('../Database/dbconnect.js')
 
 const getComments = async (req,res) => {
     try {
-        const allComments = await pool.query('SELECT * FROM comments')
-        res.status(200).json(allComments)
+        const postId = req.params.postId;
+        const getCommentCount = await pool.query('SELECT COUNT(*) FROM comments WHERE post_id = $1', [postId]);
+        const getPostComments = await pool.query('SELECT comments.id, comments.content, comments.created_at, users.username, users.profile_picture FROM comments JOIN users ON comments.user_id = users.id WHERE post_id = $1 ORDER BY created_at DESC', [postId]);
+        res.status(200).json({ count: getCommentCount.rows[0], comments: getPostComments.rows });
     } catch (error) {
         res.status(500).json({message: error.message})
     }

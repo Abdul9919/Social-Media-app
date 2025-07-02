@@ -1,6 +1,6 @@
 const express = require('express')
 const router = express.Router()
-const {registerUser,loginUser, getUser, changeUserInfo, uploadProfilePicture} = require('../controllers/userController.js')
+const {registerUser,loginUser, getUser, changeUserInfo, uploadProfilePicture, getUsersPosts} = require('../controllers/userController.js')
 const protect = require('../middleware/authMiddleware.js')
 const multer  = require('multer')
 const upload = multer({ dest: 'uploads/' })

@@ -3,7 +3,7 @@ const { getComments, createComment, updateComment, deleteComment } = require('..
 const protect = require('../middleware/authMiddleware.js');
 const router = express.Router();
 
-router.get('/', getComments);
+router.get('/:postId',protect, getComments);
 router.post('/:postId',protect, createComment);
 router.put('/:id',protect, updateComment);
 router.delete('/:id',protect, deleteComment);

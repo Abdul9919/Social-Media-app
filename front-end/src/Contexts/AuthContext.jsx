@@ -8,6 +8,7 @@ const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
     const apiUrl = import.meta.env.VITE_API_URL;
 
     // Check if user is already logged in (token exists)
@@ -19,13 +20,21 @@ export const AuthProvider = ({ children }) => {
                     headers: { Authorization: `Bearer ${token}` },
                 });
 
-                setUser({ ...res.data, token });
+                const { id, username, email, profile_picture } = res.data;
+                setUser({
+                    id,
+                    userName: username,
+                    email,
+                    profilePicture: profile_picture,
+                    token
+                });
                 setIsAuthenticated(true);
             } catch (error) {
                 console.error('Auth check failed:', error.response?.data || error.message);
                 setIsAuthenticated(false);
                 setUser(null);
             }
+            setLoading(false);
         }
     };
 
@@ -62,6 +71,7 @@ export const AuthProvider = ({ children }) => {
                 logout,
                 setIsAuthenticated,
                 setUser,
+                loading
             }}
         >
             {children}

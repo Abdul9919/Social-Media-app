@@ -6,6 +6,8 @@ import {Routes, Route} from 'react-router-dom'
 import { AuthProvider } from './Contexts/AuthContext'
 import  PrivateRoute from './Components/PrivateRoute'
 import { Register } from './Components/Pages/Register'
+import Post from './Components/Post'
+import { PostOptions } from './Components/PostOptions'
 
 function App() {return (
   <AuthProvider>
@@ -17,6 +19,8 @@ function App() {return (
     } />
     <Route path="/login" element={<Login />} />
     <Route path="/register" element={<Register />} />
+    <Route path="/post/:id" element={<Post />} />
+    <Route path="/post/options/:id" element={<PostOptions />} />
   </Routes>
   </AuthProvider>
   )

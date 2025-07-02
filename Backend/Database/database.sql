@@ -11,8 +11,12 @@ CREATE TABLE IF NOT EXISTS users (
 
         CREATE TABLE IF NOT EXISTS posts (
         id SERIAL PRIMARY KEY,
+        description TEXT,
+        media_url TEXT NOT NULL,
+        media_type VARCHAR(10) CHECK (media_type IN ('image', 'video')),
+        likes INTEGER DEFAULT 0,
+        comments INTEGER DEFAULT 0,
         user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        content VARCHAR(255) NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
 
@@ -32,3 +36,12 @@ CREATE INDEX IF NOT EXISTS comments_post_id_idx ON comments(post_id);
 
 
 CREATE INDEX IF NOT EXISTS comments_user_id_idx ON comments(user_id);
+
+CREATE TABLE IF NOT EXISTS likes (
+        post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        PRIMARY KEY (user_id, post_id),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+CREATE INDEX IF NOT EXISTS likes_post_id_idx ON likes(post_id);
+CREATE INDEX IF NOT EXISTS likes_user_id_idx ON likes(user_id);

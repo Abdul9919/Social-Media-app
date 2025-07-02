@@ -72,7 +72,7 @@ const getUser = async (req, res) => {
         return res.status(404).json({ message: 'User not found' });
     }
     const user = await pool.query('SELECT * FROM users WHERE id = $1', [userId])
-    res.json(user)
+    res.json(user.rows[0])
 }
 
 const changeUserInfo = async (req, res) => {
@@ -130,5 +130,7 @@ const uploadProfilePicture = async (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 }
+
+
 
 module.exports = { registerUser, loginUser, getUser, changeUserInfo, uploadProfilePicture };

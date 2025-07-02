@@ -1,51 +1,245 @@
-import React from 'react'
-import { FaHome, FaFacebookMessenger, FaRegCompass } from "react-icons/fa";
-import { CiSearch, CiHeart, CiSquarePlus } from "react-icons/ci";
-import { AuthContext } from '../../Contexts/AuthContext'
-import { useContext } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
+import { FaHome, FaFacebookMessenger, FaRegCompass } from 'react-icons/fa';
+import { CiSearch, CiHeart, CiSquarePlus } from 'react-icons/ci';
+import { IoChatbubbleOutline, IoPaperPlaneSharp } from 'react-icons/io5';
+import { AuthContext } from '../../Contexts/AuthContext';
+import axios from 'axios';
+import { Link, useNavigate, Routes, Route } from 'react-router-dom';
+import Post from '../Post';
+import { BsThreeDots } from "react-icons/bs";
 
 export const Home = () => {
   const { logout } = useContext(AuthContext);
+  const token = localStorage.getItem('token');
+  const { user } = useContext(AuthContext);
+  const [posts, setPosts] = useState([]);
+  const [comment, setComment] = useState('');
+  const apiUrl = import.meta.env.VITE_API_URL;
+  const navigate = useNavigate();
+  const [activePostOptions, setActivePostOptions] = useState(null);
 
- const { user } = useContext(AuthContext);
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        const response = await axios.get(`${apiUrl}/api/posts/`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        setPosts(response.data);
+      } catch (error) {
+        console.error('Error fetching posts:', error);
+      }
+    };
+    fetchPosts();
+  }, [apiUrl]);
 
+  const getPostAge = (createdAt) => {
+    const postDate = new Date(createdAt);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now - postDate) / 1000);
+    const hours = Math.floor(diffInSeconds / 3600);
+    if (diffInSeconds < 60) {
+      return `${diffInSeconds} seconds ago`;
+    }
+    else if (hours < 1) {
+      return `${Math.floor(diffInSeconds / 60)} minutes ago`;
+    }
+    else if (hours < 24) {
+      return `${Math.floor(hours)} hours ago`;
+
+    }
+    else if (hours < 720) {
+      return `${Math.floor(hours / 24)} days ago`;
+    }
+    else if (hours < 168) {
+      return `${Math.floor(hours / 24 / 7)} weeks ago`;
+    }
+    else if (hours < 8760) {
+      return `${Math.floor(hours / 720)} months ago`;
+    }
+    else {
+      return postDate.toLocaleDateString();
+    }
+  }
+
+  const handleLikeToggle = async (postId, alreadyLiked) => {
+    try {
+      if (alreadyLiked) {
+        await axios.delete(`${apiUrl}/api/likes/${postId}`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+      } else {
+        await axios.post(`${apiUrl}/api/likes/${postId}`, {}, {
+          headers: {
+
+            Authorization: `Bearer ${token}`
+          }
+        });
+      }
+
+      // Refetch posts or optimistically update state
+      const response = await axios.get(`${apiUrl}/api/posts/`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      setPosts(response.data);
+    } catch (error) {
+      console.error('Error toggling like:', error);
+    }
+  };
+
+  const handleSubmit = async (e, postId) => {
+    e.preventDefault();
+    try {
+      const response = await axios.post(`${apiUrl}/api/comments/${postId}`, {
+        content: comment
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      if (response.status === 201) {
+        setComment('');
+        // Optionally, you can refetch posts or update the state to include the new comment
+        const updatedPosts = await axios.get(`${apiUrl}/api/posts/`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        setPosts(updatedPosts.data);
+      }
+    } catch (error) {
+      console.error('Error submitting comment:', error);
+    }
+  };
   return (
-    <div className='bg-black w-screen h-screen flex'>
-      <div className='flex flex-col my-10 ml-4 gap-5 w-[14%]'>
-        <img src="/assets/chatterly.png" alt="" className='w-[102px] h-[29px] mb-10 ml-2' />
-        <div className='flex gap-2 hover:opacity-70 hover:bg-zinc-800 transition ease-in-out duration-300 min-w-[100%] rounded-md p-2'>
-          <FaHome className='text-white text-3xl' />
-          <h2 className='text-white text-lg font-bold'>Home</h2>
+    <>
+      <div className="relative bg-black w-screen h-screen flex overflow-hidden">
+
+        {/* Sidebar */}
+        <div className="flex flex-col my-10 ml-4 gap-5 w-[14%] flex-shrink-0">
+          <img src="/assets/chatterly.png" alt="" className="w-[102px] h-[29px] mb-10 ml-2" />
+          {[
+            { icon: <FaHome onClick={() => navigate('/')} />, text: 'Home' },
+            { icon: <CiSearch />, text: 'Search' },
+            { icon: <FaRegCompass />, text: 'Explore' },
+            { icon: <FaFacebookMessenger />, text: 'Messages' },
+            { icon: <CiHeart />, text: 'Notifications' },
+            { icon: <CiSquarePlus />, text: 'Create' }
+          ].map((item, idx) => (
+            <div key={idx} className="flex gap-2 hover:opacity-70 hover:bg-zinc-800 transition duration-300 rounded-md p-2">
+              {React.cloneElement(item.icon, { className: 'text-white text-3xl' })}
+              <h2 className="text-white text-lg font-bold">{item.text}</h2>
+            </div>
+          ))}
+          <div className="flex gap-2 hover:opacity-70 hover:bg-zinc-800 transition duration-300 rounded-md p-2">
+            <img src={user.profilePicture} alt="profile" className="w-[30px] h-[30px] rounded-full" />
+            <h2 className="text-white text-lg font-bold">Profile</h2>
+          </div>
+          <div onClick={logout} className="flex gap-2 hover:opacity-70 hover:bg-zinc-800 transition duration-300 rounded-md p-2 cursor-pointer">
+            <button className="text-white text-lg font-bold">Logout</button>
+          </div>
         </div>
-        <div className='flex gap-2 hover:opacity-70 hover:bg-zinc-800 transition ease-in-out duration-300 min-w-[100%] rounded-md p-2'>
-          <CiSearch className='text-white text-3xl' />
-          <h2 className='text-white text-lg font-bold'>Search</h2>
-        </div>
-        <div className='flex gap-2 hover:opacity-70 hover:bg-zinc-800 transition ease-in-out duration-300 min-w-[100%] rounded-md p-2'>
-          <FaRegCompass className='text-white text-3xl' />
-          <h2 className='text-white text-lg font-bold'>Explore</h2>
-        </div>
-        <div className='flex gap-2 hover:opacity-70 hover:bg-zinc-800 transition ease-in-out duration-300 min-w-[100%] rounded-md p-2'>
-          <FaFacebookMessenger className='text-white text-3xl' />
-          <h2 className='text-white text-lg font-bold'>Messages</h2>
-        </div>
-        <div className='flex gap-2 hover:opacity-70 hover:bg-zinc-800 transition ease-in-out duration-300 min-w-[100%] rounded-md p-2'>
-          <CiHeart className='text-white text-3xl' />
-          <h2 className='text-white text-lg font-bold'>Notifications</h2>
-        </div>
-        <div className='flex gap-2 hover:opacity-70 hover:bg-zinc-800 transition ease-in-out duration-300 min-w-[100%] rounded-md p-2'>
-          <CiSquarePlus className='text-white text-3xl' />
-          <h2 className='text-white text-lg font-bold'>Create</h2>
-        </div>
-        <div className='flex gap-2 hover:opacity-70 hover:bg-zinc-800 transition ease-in-out duration-300 min-w-[100%] rounded-md p-2'>
-          <img src={user.profilePicture} alt='profile' className='w-[30px] h-[30px] rounded-2xl bg-black'/>
-          <h2 className='text-white text-lg font-bold'>Profile</h2>
-        </div>
-        <div onClick={logout} className='flex gap-2 hover:opacity-70 hover:bg-zinc-800 transition ease-in-out duration-300 min-w-[100%] rounded-md p-2'>
-           <button  className='text-white text-lg font-bold'>Logout</button>
+
+        {/* Divider */}
+        <div className="w-px bg-zinc-800"></div>
+
+        {/* Scrollable Feed */}
+        <div className="flex-1 overflow-y-auto h-screen px-6 py-8">
+          <div className="flex flex-col items-center gap-6">
+            {posts.map((post) => (
+              <div key={post.id} className="bg-black text-white w-[470px] h-[846px] rounded-md overflow-hidden font-sans">
+                {/* Header */}
+                <div className="flex items-center justify-between px-4 py-3 ">
+                  <div className="flex items-center gap-3 min-w-[100%]">
+                    <img
+                      src={post.profile_picture || '/default-profile.jpg'}
+                      alt="user"
+                      className="w-10 h-10 rounded-full object-cover"
+                    />
+                    <div className="flex items-center gap-1">
+                      <span className="font-semibold text-sm">{post.username || `user_${post.user_id}`}</span>
+                      <span className="text-gray-400 text-xs ml-1">{getPostAge(post.created_at)}</span>
+                    </div>
+                    <div className={`flex flex-1 text-gray-400 text-xs ml-auto `}>
+                      <button onClick={() => setActivePostOptions({ postId: post.id, userId: post.user_id })} className='ml-auto'>
+                        <BsThreeDots className="text-white w-5 h-5 cursor-pointer hover:text-gray-400" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Media */}
+                {post.media_type === 'image' ? (
+                  <img src={post.media_url} alt="post" className="w-[470px] h-[575px] object-cover" />
+                ) : post.media_type === 'video' ? (
+                  <video autoPlay loop muted className="w-[470px] h-[575px] object-cover">
+                    <source src={post.media_url} type="video/mp4" />
+                  </video>
+                ) : null}
+
+                {/* Actions */}
+                <div className="flex justify-between items-center py-2">
+                  <div className="flex gap-4">
+                    <CiHeart onClick={() => handleLikeToggle(post.id, post.liked_by_user)} className={`${post.liked_by_user ? 'text-red-500' : 'text-white'} w-7 h-7 cursor-pointer ${post.liked_by_user ? null : 'hover:text-gray-400'}`} />
+                    <Link to={`/post/${post.id}`}><IoChatbubbleOutline className="text-white w-7 h-7 cursor-pointer hover:text-gray-400" /></Link>
+                    <IoPaperPlaneSharp className="text-white w-7 h-7 cursor-pointer hover:text-gray-400" />
+                  </div>
+                </div>
+                <div>
+                  <span className='flex items-center mb-4 mt-2 font-bold'>{post.like_count} likes</span>
+                </div>
+                <div className="flex gap-4 items-center">
+                  <span className="font-semibold text-sm">{post.username || `user_${post.user_id}`}</span>
+                  <p className="text-white text-sm">{post.description}</p>
+                </div>
+                <Link to={`/post/${post.id}`} className='w-full'>
+                  <div className='flex items-center my-2 text-gray-400 text-sm hover:text-gray-600 hover:cursor-pointer'>
+                    View All {post.comment_count} Comments
+                  </div>
+                </Link>
+                <div className='flex items-center'>
+                  <form
+                    action=""
+                    onSubmit={(e) => handleSubmit(e, post.id)}
+                    className='flex items-center gap-2 w-full'
+                  >
+                    <input type="text" className='outline-0 text-sm' value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Add a comment..." />
+                  </form>
+                </div>
+                <div className='flex-grow h-px bg-zinc-700 mt-4'></div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
-      <div class="w-px bg-zinc-800"></div>
-    </div>
-  )
-}
+      {activePostOptions && (
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
+          onClick={() => setActivePostOptions(null)} // Close on outside click
+        >
+          <div
+            className="flex flex-col items-center bg-zinc-800 text-white rounded-xl shadow-lg w-[400px] h-[350px]"
+            onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
+          >
+            {activePostOptions.userId !== user.id ? <span className='flex text-red-400 font-bold py-4 hover:cursor-pointer'>Unfollow</span> :<span className='flex text-red-400 font-bold py-4 hover:cursor-pointer'>Delete</span>} {/*NEED TO WORK ON THIS FUNCTIONALITY */}
+            <div className='flex-grow max-h-px min-w-[100%] bg-zinc-700'></div>
+            <span className='flex text-white  py-4 hover:cursor-pointer'>Share to...</span> {/*NEED TO WORK ON THIS FUNCTIONALITY */}
+            <div className='flex-grow max-h-px min-w-[100%] bg-zinc-700'></div>
+            <span className='flex text-white  py-4 hover:cursor-pointer'>Copy link</span> {/*NEED TO WORK ON THIS FUNCTIONALITY */}
+            <div className='flex-grow max-h-px min-w-[100%] bg-zinc-700'></div>
+            {activePostOptions.userId === user.id ? <span className='flex text-white  py-4 hover:cursor-pointer'>Edit</span> : <Link to={`/post/${activePostOptions.postId}`}><span className='flex text-white  py-4 hover:cursor-pointer'>Go to Post</span></Link>} {/*NEED TO WORK ON THIS FUNCTIONALITY */}
+            <div className='flex-grow max-h-px min-w-[100%] bg-zinc-700'></div>
+            <span className='flex text-white  py-4 hover:cursor-pointer'>About this Account</span> {/*NEED TO WORK ON THIS FUNCTIONALITY */}
+            <div className='flex-grow max-h-px min-w-[100%] bg-zinc-700'></div>
+            <span onClick={() => setActivePostOptions(null)} className='flex text-white  py-4 hover:cursor-pointer'>Cancel</span>
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
