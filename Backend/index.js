@@ -8,12 +8,23 @@ const port = process.env.PORT || 5000;
 const postRoutes = require('./routes/postRoutes.js')
 const commentRoutes = require('./routes/commentRoutes.js')
 const likeRoutes = require('./routes/likeRoutes.js');
+const {connectRedis, client}= require('./Database/redis.js');
 
 app.use(express.json());
+
+(async () => {
+  try {
+    await connectRedis();
+    console.log('Redis connected successfully');
+  } catch (error) {
+    console.error('Error connecting to Redis:', error);
+  }
+})();
+
 app.use(cors(
   {
-    origin: process.env.FRONTEND_URL,
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    origin: [process.env.FRONTEND_URL, 'localhost:5173'],  
+    methods: ['GET', 'POST', 'PUT', 'DELETE'], 
     credentials: true
   }
 ));

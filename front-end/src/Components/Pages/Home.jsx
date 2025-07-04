@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState, useRef, useCallback } from 'react';
 import { FaHome, FaFacebookMessenger, FaRegCompass } from 'react-icons/fa';
 import { CiSearch, CiHeart, CiSquarePlus } from 'react-icons/ci';
 import { IoChatbubbleOutline, IoPaperPlaneSharp } from 'react-icons/io5';
@@ -7,33 +7,60 @@ import axios from 'axios';
 import { Link, useNavigate, Routes, Route } from 'react-router-dom';
 import Post from '../Post';
 import { BsThreeDots } from "react-icons/bs";
+import VideoPlayer from '../VideoPlayer';
 
-export const Home = () => {
+
+const Home = () => {
   const { logout } = useContext(AuthContext);
   const token = localStorage.getItem('token');
   const { user } = useContext(AuthContext);
   const [posts, setPosts] = useState([]);
-  const [comment, setComment] = useState('');
   const apiUrl = import.meta.env.VITE_API_URL;
   const navigate = useNavigate();
   const [activePostOptions, setActivePostOptions] = useState(null);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const loaderRef = useRef();
+  const commentInputRef = useRef({});
+
+  const fetchPosts = useCallback(async (pageNumber) => {
+    try {
+      const response = await axios.get(`${apiUrl}/api/posts/`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        params: {
+          page: pageNumber,
+        },
+      });
+
+      if (response.data.length < 3) {
+        setHasMore(false);
+      }
+
+      if (response.data.length > 0) {
+        setPosts(prev => [...prev, ...response.data]);
+      }
+    } catch (error) {
+      console.error('Error fetching posts:', error);
+    }
+  }, []);
 
   useEffect(() => {
-    const fetchPosts = async () => {
-      try {
-        const response = await axios.get(`${apiUrl}/api/posts/`, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
-        setPosts(response.data);
-      } catch (error) {
-        console.error('Error fetching posts:', error);
-      }
-    };
-    fetchPosts();
-  }, [apiUrl]);
+    if (hasMore) fetchPosts(page);
+  }, [page, fetchPosts]);
 
+  // Intersection Observer for infinite scroll
+  const observer = useRef();
+  const lastPostRef = useCallback(node => {
+    if (observer.current) observer.current.disconnect();
+    observer.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && hasMore) {
+        setPage(prev => prev + 1);
+      }
+    });
+    if (node) observer.current.observe(node);
+  }, [hasMore]);
   const getPostAge = (createdAt) => {
     const postDate = new Date(createdAt);
     const now = new Date();
@@ -91,9 +118,13 @@ export const Home = () => {
       console.error('Error toggling like:', error);
     }
   };
-
   const handleSubmit = async (e, postId) => {
     e.preventDefault();
+    const inputEl = commentInputRef.current[postId];
+    const comment = inputEl?.value;
+    if (!comment.trim()) {
+      return; // Prevent submission of empty comments
+    }
     try {
       const response = await axios.post(`${apiUrl}/api/comments/${postId}`, {
         content: comment
@@ -103,19 +134,13 @@ export const Home = () => {
         }
       });
       if (response.status === 201) {
-        setComment('');
-        // Optionally, you can refetch posts or update the state to include the new comment
-        const updatedPosts = await axios.get(`${apiUrl}/api/posts/`, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
-        setPosts(updatedPosts.data);
+        commentInputRef.current[postId].value = '';
       }
     } catch (error) {
       console.error('Error submitting comment:', error);
     }
   };
+
   return (
     <>
       <div className="relative bg-black w-screen h-screen flex overflow-hidden">
@@ -151,8 +176,8 @@ export const Home = () => {
         {/* Scrollable Feed */}
         <div className="flex-1 overflow-y-auto h-screen px-6 py-8">
           <div className="flex flex-col items-center gap-6">
-            {posts.map((post) => (
-              <div key={post.id} className="bg-black text-white w-[470px] h-[846px] rounded-md overflow-hidden font-sans">
+            {posts.map((post, index) => (
+              <div ref={index === posts.length - 1 ? lastPostRef : null} key={post.id} className="bg-black text-white w-[470px] h-[846px] rounded-md overflow-hidden font-sans">
                 {/* Header */}
                 <div className="flex items-center justify-between px-4 py-3 ">
                   <div className="flex items-center gap-3 min-w-[100%]">
@@ -177,9 +202,7 @@ export const Home = () => {
                 {post.media_type === 'image' ? (
                   <img src={post.media_url} alt="post" className="w-[470px] h-[575px] object-cover" />
                 ) : post.media_type === 'video' ? (
-                  <video autoPlay loop muted className="w-[470px] h-[575px] object-cover">
-                    <source src={post.media_url} type="video/mp4" />
-                  </video>
+                  <VideoPlayer src={post.media_url} />
                 ) : null}
 
                 {/* Actions */}
@@ -208,12 +231,17 @@ export const Home = () => {
                     onSubmit={(e) => handleSubmit(e, post.id)}
                     className='flex items-center gap-2 w-full'
                   >
-                    <input type="text" className='outline-0 text-sm' value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Add a comment..." />
+                    <input type="text" className='outline-0 text-sm' ref={(el) => (commentInputRef.current[post.id] = el)} />
                   </form>
                 </div>
                 <div className='flex-grow h-px bg-zinc-700 mt-4'></div>
               </div>
             ))}
+            {hasMore && (
+              <div ref={loaderRef} className="text-white mt-4">
+                Loading more posts...
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -223,10 +251,10 @@ export const Home = () => {
           onClick={() => setActivePostOptions(null)} // Close on outside click
         >
           <div
-            className="flex flex-col items-center bg-zinc-800 text-white rounded-xl shadow-lg w-[400px] h-[350px]"
+            className="flex flex-col items-center bg-zinc-800 text-white rounded-4xl shadow-lg w-[400px] h-[350px]"
             onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
           >
-            {activePostOptions.userId !== user.id ? <span className='flex text-red-400 font-bold py-4 hover:cursor-pointer'>Unfollow</span> :<span className='flex text-red-400 font-bold py-4 hover:cursor-pointer'>Delete</span>} {/*NEED TO WORK ON THIS FUNCTIONALITY */}
+            {activePostOptions.userId !== user.id ? <span className='flex text-red-400 font-bold py-4 hover:cursor-pointer'>Unfollow</span> : <span className='flex text-red-400 font-bold py-4 hover:cursor-pointer'>Delete</span>} {/*NEED TO WORK ON THIS FUNCTIONALITY */}
             <div className='flex-grow max-h-px min-w-[100%] bg-zinc-700'></div>
             <span className='flex text-white  py-4 hover:cursor-pointer'>Share to...</span> {/*NEED TO WORK ON THIS FUNCTIONALITY */}
             <div className='flex-grow max-h-px min-w-[100%] bg-zinc-700'></div>
@@ -240,6 +268,9 @@ export const Home = () => {
           </div>
         </div>
       )}
+      {/*hasMore && <div ref={loaderRef} className="h-10 w-full" />*/}
     </>
   );
 };
+
+export default Home;

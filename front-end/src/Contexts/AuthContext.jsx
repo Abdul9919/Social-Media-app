@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
+import useAutoLogout from '../hooks/useAutoLogout';
 
 // Create context
 const AuthContext = createContext();
@@ -36,6 +37,7 @@ export const AuthProvider = ({ children }) => {
             }
             setLoading(false);
         }
+        setLoading(false);
     };
 
     useEffect(() => {
@@ -61,7 +63,7 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
         setIsAuthenticated(false);
     };
-
+    useAutoLogout(user?.token, logout);
     return (
         <AuthContext.Provider
             value={{

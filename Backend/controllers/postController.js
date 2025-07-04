@@ -1,9 +1,17 @@
 const { pool } = require('../Database/dbconnect.js');
 const cloudinary = require('../config/cloudinary.js');
 const fs = require('fs/promises');
+const { client } = require('../Database/redis.js');
 const getPosts = async (req, res) => {
   try {
-    const userId = req.user?.id || null;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const page = parseInt(req.query.page) || 1;
+    const itemsPerPage = 3;
+    const offSet = (page - 1) * itemsPerPage;
 
     const result = await pool.query(`
       SELECT 
@@ -20,9 +28,10 @@ const getPosts = async (req, res) => {
       JOIN users ON posts.user_id = users.id
       LEFT JOIN likes ON likes.post_id = posts.id
       LEFT JOIN comments ON comments.post_id = posts.id
-      GROUP BY posts.id, users.username, users.profile_picture
+      GROUP BY posts.id, users.id
       ORDER BY posts.created_at DESC
-    `, [userId]);
+      LIMIT $2 OFFSET $3
+    `, [userId, itemsPerPage, offSet]);
 
     res.status(200).json(result.rows);
   } catch (err) {
@@ -30,6 +39,7 @@ const getPosts = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
 
 const updatePost = async (req, res) => {
     try {
@@ -64,7 +74,7 @@ const createPost = async (req, res) => {
         const { description } = req.body;
         const file = req.file;
 
-        if(!userId) { 
+        if (!userId) {
             return res.status(401).json({ message: 'Unauthorized' });
         }
 
@@ -81,6 +91,10 @@ const createPost = async (req, res) => {
         });
         await fs.unlink(file.path);
         const newPost = await pool.query('INSERT INTO posts (description, media_url, media_type, user_id) VALUES ($1, $2, $3, $4) RETURNING *', [description, result.secure_url, result.resource_type, userId])
+        const keys = await client.sMembers('feed_cache_keys');
+        for (const key of keys) {
+            await client.del(key);
+        }
         res.status(201).json(newPost.rows[0]);
     } catch (error) {
         res.status(500).json({ message: error.message })

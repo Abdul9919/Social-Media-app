@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const { pool } = require('../Database/dbconnect.js');
 const cloudinary = require('../config/cloudinary.js');
 const fs = require('fs/promises');
+const { client } = require('../Database/redis.js');
 
 const registerUser = async (req, res) => {
     try {
@@ -50,8 +51,11 @@ const loginUser = async (req, res) => {
         const token = jwt.sign(
             { id: checkEmail.rows[0].id },
             process.env.JWT_SECRET,
-            { expiresIn: '30d' }
+            { expiresIn: '5h' }
         );
+        const cacheKey = `user:${checkEmail.rows[0].id}`;
+        const expireKey = 18600;
+        await client.set(cacheKey, JSON.stringify(checkEmail.rows[0]), 'EX', expireKey);
         res.status(200).json({
             id: checkEmail.rows[0].id,
             username: checkEmail.rows[0].username,
@@ -67,11 +71,17 @@ const loginUser = async (req, res) => {
 
 const getUser = async (req, res) => {
     const userId = req.user.id
-
+    const cachedUser = await client.get(`user:${userId}`);
+    if (cachedUser) {
+        return res.status(200).json(JSON.parse(cachedUser));
+    }
     if (!userId) {
         return res.status(404).json({ message: 'User not found' });
     }
     const user = await pool.query('SELECT * FROM users WHERE id = $1', [userId])
+    if (user.rows.length === 0) {
+        return res.status(404).json({ message: 'User does not exist' });
+    }
     res.json(user.rows[0])
 }
 
@@ -96,6 +106,7 @@ const changeUserInfo = async (req, res) => {
     const updatedUser = await pool.query('UPDATE users SET username = $1, email = $2, password = $3 WHERE id = $4 RETURNING *',
         [username, email, hashedPassword, userId]
     );
+    await client.del(`user:${userId}`);
     res.status(200).json(updatedUser);
 }
 
