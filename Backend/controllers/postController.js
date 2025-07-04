@@ -33,7 +33,30 @@ const getPosts = async (req, res) => {
       LIMIT $2 OFFSET $3
     `, [userId, itemsPerPage, offSet]);
 
-    res.status(200).json(result.rows);
+const singlePosts = await Promise.all(result.rows.map(async (post) => {
+  const postId = post.id;
+
+  const cachedComments = await client.get(`post_comments:${postId}:first_page`);
+  if (cachedComments) {
+    return {
+      ...post,
+      comments: JSON.parse(cachedComments)
+    };
+  }
+  const getPostComments = await pool.query(
+    'SELECT comments.id, comments.content, comments.created_at, users.username, users.profile_picture FROM comments JOIN users ON comments.user_id = users.id WHERE post_id = $1 ORDER BY created_at DESC LIMIT 5',
+    [postId]
+  );
+  await client.set(`post_comments:${postId}:first_page`, JSON.stringify(getPostComments.rows), {
+    EX: 3600  // Cache for 1 hour
+  });
+  return {
+    ...post,
+    comments: getPostComments.rows
+  };
+}));
+
+res.status(200).json(singlePosts);
   } catch (err) {
     console.error("Error fetching posts:", err);
     res.status(500).json({ message: "Internal server error" });

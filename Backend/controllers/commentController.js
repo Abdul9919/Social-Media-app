@@ -9,6 +9,12 @@ const getComments = async (req, res) => {
     }
     const postId = req.params.postId;
     const page = parseInt(req.query.page) || 1;
+      if (page === 1) {
+    const cached = await client.get(`post_comments:${postId}:first_page`);
+    if (cached) {
+      return res.status(200).json({ comments: JSON.parse(cached) });
+    }
+  }
     const itemsPerPage = 5;
     const offSet = (page - 1) * itemsPerPage;
     //  const cacheKey = `post_comments_${postId}_${userId}`;
