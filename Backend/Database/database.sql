@@ -46,3 +46,6 @@ CREATE TABLE IF NOT EXISTS likes (
       );
 CREATE INDEX IF NOT EXISTS likes_post_id_idx ON likes(post_id);
 CREATE INDEX IF NOT EXISTS likes_user_id_idx ON likes(user_id);
+
+CREATE INDEX IF NOT EXISTS idx_posts_created_at ON posts(created_at);
+CREATE INDEX IF NOT EXISTS idx_likes_post_user ON likes(post_id, user_id);

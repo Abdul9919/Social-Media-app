@@ -15,7 +15,7 @@ export const Register = () => {
         setError(null)
         try {
             const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/users/register`, { username, email, password });
-            if (res.data && res.data.id) {
+            if (res.data) {
                 alert('Registration successful! You can now log in.');
                 // Optionally redirect to login page
                 navigate('/login');
@@ -28,7 +28,7 @@ export const Register = () => {
     }
     return (
         <div className='bg-black w-screen h-screen flex flex-col items-center justify-center'>
-            <div className='flex flex-col items-center mt-[2rem] lg:border-1 border-zinc-700 max-w-[75%] lg:max-w-[30%] h-[69%]'>
+            <div className='flex flex-col items-center mt-[2rem] lg:border-1 border-zinc-700 max-w-[75%] lg:max-w-[30%] h-[72%]'>
                 <img src="/assets/chatterly.png" alt="" className='w-[200px] h-[65px] m-10' />
                 <div className='max-w-[75%]'>
                     <h6 className='text-zinc-400 font-semibold mb-4'>Sign up to see photos and videos from your friends.</h6>
@@ -45,7 +45,7 @@ export const Register = () => {
                     <input type="text" placeholder="Username" onChange={(e) => setUsername(e.target.value)} value={username} style={{ fontFamily: 'Aerial' }} className='bg-zinc-900 text-[#F5F5F5] py-[9px] pl-[7px] w-64 border-1 rounded-sm border-stone-500 text-[16px]' />
                     <input type="email" placeholder="Email" onChange={(e) => setEmail(e.target.value)} value={email} style={{ fontFamily: 'Aerial' }} className='bg-zinc-900 text-[#F5F5F5] py-[9px] pl-[7px] w-64 border-1 rounded-sm border-stone-500 text-[16px]' />
                     <input type="password" placeholder="Password" onChange={(e) => setPassword(e.target.value)} value={password} style={{ fontFamily: 'Aerial' }} className='bg-zinc-900 text-[#F5F5F5] py-[9px] pl-[7px] w-64 border-1 rounded-sm border-stone-500 text-[16px]' />
-                    <button type="submit" className='bg-blue-500 text-white p-2 rounded mt-4'>Sign Up</button>
+                    <button type="submit" className='bg-blue-500 text-white p-2 rounded my-2'>Sign Up</button>
                 </form>
 
             </div>

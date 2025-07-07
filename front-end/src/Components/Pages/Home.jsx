@@ -8,6 +8,8 @@ import { Link, useNavigate, Routes, Route } from 'react-router-dom';
 import Post from '../Post';
 import { BsThreeDots } from "react-icons/bs";
 import VideoPlayer from '../VideoPlayer';
+import { PostOptions } from '../PostOptions';
+import { Likes } from '../Likes';
 
 
 const Home = () => {
@@ -18,11 +20,13 @@ const Home = () => {
   const apiUrl = import.meta.env.VITE_API_URL;
   const navigate = useNavigate();
   const [activePostOptions, setActivePostOptions] = useState(null);
+  const [activePostLikes, setActivePostLikes] = useState(null)
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const loaderRef = useRef();
   const commentInputRef = useRef({});
 
+  
   const fetchPosts = useCallback(async (pageNumber) => {
     try {
       const response = await axios.get(`${apiUrl}/api/posts/`, {
@@ -107,13 +111,29 @@ const Home = () => {
         });
       }
 
-      // Refetch posts or optimistically update state
-      const response = await axios.get(`${apiUrl}/api/posts/`, {
+      const response = await axios.get(`${apiUrl}/api/posts/${postId}`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
       });
-      setPosts(response.data);
+      setPosts(prevPosts => {
+        const index = prevPosts.findIndex(p => p.id === response.data.id);
+
+        if (index !== -1) {
+          // Update (replace existing post at that index)
+          const updated = [...prevPosts];
+          updated[index] = response.data;
+          return updated;
+        } else {
+          // Insert at a specific position (e.g., top or any index)
+          const insertIndex = 0; // or wherever you want
+          return [
+            ...prevPosts.slice(0, insertIndex),
+            response.data,
+            ...prevPosts.slice(insertIndex)
+          ];
+        }
+      });
     } catch (error) {
       console.error('Error toggling like:', error);
     }
@@ -140,6 +160,7 @@ const Home = () => {
       console.error('Error submitting comment:', error);
     }
   };
+
 
   return (
     <>
@@ -213,8 +234,8 @@ const Home = () => {
                     <IoPaperPlaneSharp className="text-white w-7 h-7 cursor-pointer hover:text-gray-400" />
                   </div>
                 </div>
-                <div>
-                  <span className='flex items-center mb-4 mt-2 font-bold'>{post.like_count} likes</span>
+                <div onClick={()=>{setActivePostLikes({postId: post.id, userId: post.user_id})}} className='hover:cursor-pointer'>
+                  <span className='flex items-center mb-4 mt-2 font-bold' >{post.like_count} likes</span>
                 </div>
                 <div className="flex gap-4 items-center">
                   <span className="font-semibold text-sm">{post.username || `user_${post.user_id}`}</span>
@@ -231,7 +252,7 @@ const Home = () => {
                     onSubmit={(e) => handleSubmit(e, post.id)}
                     className='flex items-center gap-2 w-full'
                   >
-                    <input type="text" className='outline-0 text-sm' ref={(el) => (commentInputRef.current[post.id] = el)} />
+                    <input type="text" placeholder='Add a Comment' className='outline-0 text-sm' ref={(el) => (commentInputRef.current[post.id] = el)} />
                   </form>
                 </div>
                 <div className='flex-grow h-px bg-zinc-700 mt-4'></div>
@@ -246,27 +267,10 @@ const Home = () => {
         </div>
       </div>
       {activePostOptions && (
-        <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
-          onClick={() => setActivePostOptions(null)} // Close on outside click
-        >
-          <div
-            className="flex flex-col items-center bg-zinc-800 text-white rounded-4xl shadow-lg w-[400px] h-[350px]"
-            onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
-          >
-            {activePostOptions.userId !== user.id ? <span className='flex text-red-400 font-bold py-4 hover:cursor-pointer'>Unfollow</span> : <span className='flex text-red-400 font-bold py-4 hover:cursor-pointer'>Delete</span>} {/*NEED TO WORK ON THIS FUNCTIONALITY */}
-            <div className='flex-grow max-h-px min-w-[100%] bg-zinc-700'></div>
-            <span className='flex text-white  py-4 hover:cursor-pointer'>Share to...</span> {/*NEED TO WORK ON THIS FUNCTIONALITY */}
-            <div className='flex-grow max-h-px min-w-[100%] bg-zinc-700'></div>
-            <span className='flex text-white  py-4 hover:cursor-pointer'>Copy link</span> {/*NEED TO WORK ON THIS FUNCTIONALITY */}
-            <div className='flex-grow max-h-px min-w-[100%] bg-zinc-700'></div>
-            {activePostOptions.userId === user.id ? <span className='flex text-white  py-4 hover:cursor-pointer'>Edit</span> : <Link to={`/post/${activePostOptions.postId}`}><span className='flex text-white  py-4 hover:cursor-pointer'>Go to Post</span></Link>} {/*NEED TO WORK ON THIS FUNCTIONALITY */}
-            <div className='flex-grow max-h-px min-w-[100%] bg-zinc-700'></div>
-            <span className='flex text-white  py-4 hover:cursor-pointer'>About this Account</span> {/*NEED TO WORK ON THIS FUNCTIONALITY */}
-            <div className='flex-grow max-h-px min-w-[100%] bg-zinc-700'></div>
-            <span onClick={() => setActivePostOptions(null)} className='flex text-white  py-4 hover:cursor-pointer'>Cancel</span>
-          </div>
-        </div>
+        <PostOptions activePostOptions={activePostOptions} setActivePostOptions={setActivePostOptions}/>
+      )}
+      {activePostLikes && (
+        <Likes activePostLikes={activePostLikes} setActivePostLikes={setActivePostLikes}/>
       )}
       {/*hasMore && <div ref={loaderRef} className="h-10 w-full" />*/}
     </>

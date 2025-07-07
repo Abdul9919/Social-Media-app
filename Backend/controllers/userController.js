@@ -4,34 +4,13 @@ const { pool } = require('../Database/dbconnect.js');
 const cloudinary = require('../config/cloudinary.js');
 const fs = require('fs/promises');
 const { client } = require('../Database/redis.js');
+const userService = require('../services/userService.js')
 
 const registerUser = async (req, res) => {
     try {
         const { username, email, password } = req.body;
-        if (!username || !email || !password) {
-            return res.status(400).json({ message: 'All fields are required' });
-        }
-        const existingUser = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
-        if (existingUser.rows.length > 0) {
-            return res.status(409).json({ message: 'User already exists' });
-        }
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-        const existingUsername = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
-        if (existingUsername.rows.length > 0) {
-            return res.status(409).json({ message: 'Username already exists' });
-        }
-        const newUser = await pool.query('INSERT INTO users (username, email, password) VALUES ($1, $2, $3) RETURNING *', [username, email, hashedPassword]);
-        const token = jwt.sign(
-            { id: newUser.rows[0].id },
-            process.env.JWT_SECRET,
-            { expiresIn: '30d' }
-        );
-
-        res.status(201).json({
-            id: newUser.rows[0].id,
-            username: newUser.rows[0].username,
-        });
+        const user = await userService.registerUser(username, email, password)
+        res.status(201).json({message: 'New user Registered'})
     } catch (error) {
         console.error('Error registering user:', error);
         res.status(500).json({ message: 'Internal server error' });
@@ -55,7 +34,9 @@ const loginUser = async (req, res) => {
         );
         const cacheKey = `user:${checkEmail.rows[0].id}`;
         const expireKey = 18600;
-        await client.set(cacheKey, JSON.stringify(checkEmail.rows[0]), 'EX', expireKey);
+        await client.set(cacheKey, JSON.stringify(checkEmail.rows[0]), {
+            EX: expireKey  // Cache for 1 hour
+        });
         res.status(200).json({
             id: checkEmail.rows[0].id,
             username: checkEmail.rows[0].username,
@@ -88,6 +69,9 @@ const getUser = async (req, res) => {
 const changeUserInfo = async (req, res) => {
     const userId = req.user.id;
     const { username, email, password } = req.body;
+    if (!userId) {
+        return res.status(401).json({ message: 'Unauthorized' })
+    }
     const selectedUser = await pool.query('SELECT * FROM users WHERE id = $1', [userId])
     if (!username) {
         return res.status(400).json({ message: 'username is missing' })
@@ -113,6 +97,10 @@ const changeUserInfo = async (req, res) => {
 const uploadProfilePicture = async (req, res) => {
     const userId = req.user.id;
     const file = req.file;
+
+    if(!userId){
+      return res.status(401).json({message: 'Unauthorized'})
+    }
 
     if (!file) {
         return res.status(400).json({ message: 'No file uploaded' });

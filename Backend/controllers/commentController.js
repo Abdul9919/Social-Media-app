@@ -36,6 +36,9 @@ const createComment = async (req, res) => {
     const { postId } = req.params;
     const { content } = req.body;
 
+    if(!userId){
+      return res.status(401).json({message: 'Unauthorized'})
+    }
     // Validation
     if (!content) {
       return res.status(400).json({ message: "Content is required" });
@@ -66,6 +69,10 @@ const updateComment = async (req, res) => {
     const postId = req.params.id;
     const { content } = req.body;
 
+    if(!userId){
+      return res.status(401).json({message: 'Unauthorized'})
+    }
+
     if (!content) {
       return res.status(400).json({ message: "content is required" })
     }
@@ -80,7 +87,11 @@ const updateComment = async (req, res) => {
 
 const deleteComment = async (req, res) => {
   try {
+    const userId = req.user.id
     const commentId = req.params.id;
+    if(!userId){
+      return res.status(401).json({message: 'Unauthorized'})
+    }
     await pool.query('DELETE FROM comments WHERE id = $1', [commentId]);
     res.status(200).json({ message: 'comment deleted successfully' })
   } catch (error) {

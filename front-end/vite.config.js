@@ -6,7 +6,8 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   plugins: [react(),tailwindcss()],
     server: {
-    host: '0.0.0.0', // Allow connections from LAN
-    port: 5173       // Or any port you want
+    host: true, // allow external access (e.g., via IP or Ngrok)
+    port: 5173,
+    allowedHosts: ['.ngrok-free.app', 'unknown-contrast-flat-karl.trycloudflare.com']
   }
 })
