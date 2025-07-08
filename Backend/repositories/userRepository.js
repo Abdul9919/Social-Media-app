@@ -15,8 +15,32 @@ const createUser = async (newUser) =>{
     return await createdUser
 }
 
+const checkUser = async (email) => {
+    const checkEmail = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    return await checkEmail
+}
+
+const getUser = async (userId) => {
+    const user = await pool.query('SELECT * FROM users WHERE id = $1', [userId])
+    return await user
+}
+
+const changeUserInfo = async (userId,username,email,password) => {
+    const user = await pool.query('UPDATE users SET username= $1 password= $2 email= $3 WHERE id = $4 RETURNING *', [username, password, email, userId])
+    return await user
+}
+
+const uploadProfilePicture = async (result, userId) => {
+    const user = await pool.query('UPDATE users SET profile_picture = $1 WHERE id = $2 RETURNING *', [result, userId])
+    return await user
+}
+
 module.exports = {
     existingEmail,
     existingUsername,
-    createUser
+    createUser,
+    checkUser,
+    getUser,
+    changeUserInfo,
+    uploadProfilePicture
 }
