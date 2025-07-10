@@ -135,7 +135,7 @@ const Home = () => {
         }
       });
     } catch (error) {
-      console.error('Error toggling like:', error);
+      console.error('Error toggling like:', error.message);
     }
   };
   const handleSubmit = async (e, postId) => {

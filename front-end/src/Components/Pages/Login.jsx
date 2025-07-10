@@ -11,11 +11,13 @@ export const Login = () => {
   const [error, setError] = useState('');
   const apiUrl = import.meta.env.VITE_API_URL;
   const { login, isAuthenticated } = useContext(AuthContext);
+  const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null)
+    setLoading(true)
     try {
       const res = await axios.post(`${apiUrl}/api/users/login`, { email, password });
       if (res.data && res.data.id) {
@@ -46,8 +48,8 @@ export const Login = () => {
         <form action="" onSubmit={handleSubmit} className='flex flex-col items-center justify-center'>
           <input type="email" name="email" value={email} onChange={(e) => { setEmail(e.target.value) }} id="email" placeholder='Email' className='bg-zinc-900 mb-2 border-1 rounded-sm border-zinc-700 pl-4 py-2 pr-[8rem] text-sm' />
           <input type="password" name="password" value={password} onChange={(e) => { setPassword(e.target.value) }} id="password" placeholder='Password' className='bg-zinc-900 mb-5 border-1 rounded-sm border-zinc-700 pl-4 py-2 pr-[8rem] text-sm' />
-          <button type="submit" className='bg-[#4F46E5] text-white px-6 py-2 rounded-md hover:bg-[#4338CA] transition duration-300 ease-in-out'>
-            Sign in
+          <button type="submit" className='bg-[#4F46E5] text-white px-6 py-2 rounded-md hover:bg-[#4338CA] hover:cursor-pointer transition duration-300 ease-in-out'>
+            {!loading ? 'Sign in' : <div className="w-6 h-6 border-4 border-white border-dashed rounded-full animate-spin" />}
           </button>
         </form>
         <div className='flex items-center my-4'>

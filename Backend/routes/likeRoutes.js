@@ -5,6 +5,6 @@ const router = express.Router();
 
 router.post('/:postId',protect, likePost);
 router.delete('/:postId',protect, unlikePost);
-router.get('/:postId',protect, getLikes);
+router.get('/:postId',protect, getLikes); 
 
 module.exports = router;

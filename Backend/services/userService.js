@@ -7,38 +7,44 @@ const fs = require('fs/promises');
 
 const registerUser = async (username, email, password) => {
     if (!username || !email || !password) {
-        return res.status(400).json({ message: 'All fields are required' });
+        const error = new Error('All fields are required');
+        error.statusCode = 400;
+        throw error;
     }
 
-    const existingEmail = await userRepository.existingEmail(email)
+    const existingEmail = await userRepository.existingEmail(email);
     if (existingEmail.rows.length > 0) {
-        return res.status(409).json({ message: 'Email already exists' });
+        const error = new Error('Email already exists');
+        error.statusCode = 409;
+        throw error;
     }
 
-    const existingUsername = await userRepository.existingUsername(username)
+    const existingUsername = await userRepository.existingUsername(username);
     if (existingUsername.rows.length > 0) {
-        return res.status(409).json({ message: 'Username already exists' });
+        const error = new Error('Username already exists');
+        error.statusCode = 409;
+        throw error;
     }
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    const newUser = {
-        username,
-        email,
-        password: hashedPassword
-    }
-    return await userRepository.createUser(newUser)
-}
+    const newUser = { username, email, password: hashedPassword };
+    return await userRepository.createUser(newUser);
+};
 
-const loginUser = async (email, password) => {
+const loginUser = async (email, password, res) => {
     if (!email || !password) {
-        return res.status(409).json({ message: 'All fields are required' });
+        const error = new Error('All fields are required');
+        error.statusCode = 400
+        throw error
     }
     const checkUser = await userRepository.checkUser(email)
 
     if (checkUser.rows.length === 0) {
-        return res.status(401).json({ message: 'Invalid email or password' });
+        const error = new Error('Invalid email or password');
+        error.statusCode = 401
+        throw error
     }
 
     const token = jwt.sign(
@@ -66,18 +72,25 @@ const loginUser = async (email, password) => {
 const getUser = async (userId) => {
 
     const cachedUser = await client.get(`user:${userId}`);
+
+    let user;
+
     if (cachedUser) {
-        return res.status(200).json(JSON.parse(cachedUser));
+        return (user = (JSON.parse(cachedUser)));
     }
 
     if (!userId) {
-        return res.status(404).json({ message: 'User not found' });
+        const error = new Error('Unauthorized');
+        error.statusCode = 401
+        throw error
     }
 
-    const user = await userRepository.getUser(userId)
+    user = await userRepository.getUser(userId)
 
     if (user.rows.length === 0) {
-        return res.status(404).json({ message: 'User does not exist' });
+        const error = new Error('User does not exist');
+        error.statusCode = 404
+        throw error
     }
 
     await client.del(`user:${userId}`);
@@ -86,21 +99,29 @@ const getUser = async (userId) => {
 
 }
 
-const changeUserInfo = async (userId, username, email, password) => {
+const changeUserInfo = async (userId, username, email, password, res) => {
     if (!userId) {
-        return res.status(401).json({ message: 'Unauthorized' })
+        const error = new Error('Unauthorized');
+        error.statusCode = 401
+        throw error
     }
 
     if (!username) {
-        res.status(400).message({ message: 'Username is missing' })
+        const error = new Error('Username is missing');
+        error.statusCode = 400
+        throw error
     }
 
     if (!email) {
-        res.status(400).message({ message: 'Email is missing' })
+        const error = new Error('email is missing');
+        error.statusCode = 400
+        throw error
     }
 
     if (!password) {
-        res.status(400).message({ message: 'Password is missing' })
+        const error = new Error('Password is missing');
+        error.statusCode = 400
+        throw error
     }
 
     const salt = await bcrypt.genSalt(10);
@@ -110,19 +131,25 @@ const changeUserInfo = async (userId, username, email, password) => {
 
 }
 
-const uploadProfilePicture = async (userId, file) => {
+const uploadProfilePicture = async (userId, file,res ) => {
 
     if (!userId) {
-        res.status(401).json({ message: 'Unauthorized' })
+        const error = new Error('Unauthorized');
+        error.statusCode = 401
+        throw error
     }
 
     if (!file) {
-        res.status(400).json({ message: 'No file provided' })
+        const error = new Error('No file provided');
+        error.statusCode = 400
+        throw error
     }
 
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
     if (!allowedTypes.includes(file.mimetype)) {
-        return res.status(400).json({ message: 'Invalid file type' });
+        const error = new Error('Invalid file type');
+        error.statusCode = 400
+        throw error
     }
     const result = await cloudinary.uploader.upload(file.path, {
         folder: 'profile_pictures',
