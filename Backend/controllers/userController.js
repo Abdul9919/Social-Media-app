@@ -1,6 +1,7 @@
 
 const userService = require('../services/userService.js')
 
+
 const registerUser = async (req, res) => {
     try {
         const { username, email, password } = req.body;

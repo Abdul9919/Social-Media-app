@@ -19,7 +19,6 @@ const getPosts = async (req, res) => {
         p.*, 
         u.username, 
         u.profile_picture,
-        COALESCE(l.like_count, 0) AS like_count,
         COALESCE(c.comment_count, 0) AS comment_count,
         EXISTS (
           SELECT 1 FROM likes 
@@ -27,11 +26,6 @@ const getPosts = async (req, res) => {
         ) AS liked_by_user
       FROM posts p
       JOIN users u ON p.user_id = u.id
-      LEFT JOIN (
-        SELECT post_id, COUNT(*) AS like_count
-        FROM likes
-        GROUP BY post_id
-      ) l ON l.post_id = p.id
       LEFT JOIN (
         SELECT post_id, COUNT(*) AS comment_count
         FROM comments
@@ -46,6 +40,18 @@ const getPosts = async (req, res) => {
 
     // Cache or fetch 5 comments per post
     const enrichedPosts = await Promise.all(posts.map(async post => {
+
+      const likeCountCache = await client.get(`post:${post.id}:like_count`);
+      let like_count;
+      if (likeCountCache) {
+        like_count = likeCountCache
+      }
+      else {
+        const likeCountResult = await pool.query('SELECT COUNT(*) AS like_count FROM likes WHERE post_id = $1', [post.id]);
+        like_count = likeCountResult.rows[0].like_count;
+        await client.set(`post:${post.id}:like_count`, like_count);
+      }
+
       const cacheKey = `post_comments:${post.id}_${userId}:first_page`;
       let comments;
 
@@ -70,7 +76,8 @@ const getPosts = async (req, res) => {
 
       return {
         ...post,
-        comments
+        comments,
+        like_count
       };
     }));
 
@@ -178,11 +185,12 @@ const createPost = async (req, res) => {
       resource_type: 'auto'
     });
     await fs.unlink(file.path);
-    const newPost = await pool.query('INSERT INTO posts (description, media_url, media_type, user_id) VALUES ($1, $2, $3, $4) RETURNING *', [description, result.secure_url, result.resource_type, userId])
-    //const keys = await client.sMembers('feed_cache_keys');
-    //for (const key of keys) {
-    // await client.del(key);
-    // }
+    const newPost = await pool.query(
+      'INSERT INTO posts (description, media_url, media_type, user_id) VALUES ($1, $2, $3, $4) RETURNING *',
+      [description, result.secure_url, result.resource_type, userId]
+    );
+    await client.set(`post:${newPost.rows[0].id}:like_count`, 0);
+
     res.status(201).json(newPost.rows[0]);
   } catch (error) {
     res.status(500).json({ message: error.message })

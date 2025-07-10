@@ -1,4 +1,5 @@
 const { pool } = require('../Database/dbconnect.js');
+const {client} = require('../Database/redis.js');
 
 const existingLike = async (postId, userId) => {
     const existingLike = await pool.query('SELECT * FROM likes WHERE post_id = $1 AND user_id = $2', [postId, userId]);
@@ -7,11 +8,17 @@ const existingLike = async (postId, userId) => {
 
 const likePost = async (postId, userId) => {
     const like =  await pool.query('INSERT INTO likes (post_id, user_id) VALUES ($1, $2)', [postId, userId]);
+    await client.incr(`post:${postId}:like_count`);
     return await like
 }
 
 const unlikePost = async (userId, postId) => {
-    const unlike = await pool.query('DELETE FROM likes WHERE user_id = $1 AND post_id = $2', [userId, postId]);
+    const unlike = await pool.query('DELETE FROM likes WHERE user_id = $1 AND post_id = $2 RETURNING *', [userId, postId]);
+    const existingLikeCache = await client.get(`post:${postId}:like_count`)
+    const likeCount = parseInt(existingLikeCache, 10);
+    if(likeCount >0){
+        await client.decr(`post:${postId}:like_count`);
+    }
     return await unlike
 }
 
