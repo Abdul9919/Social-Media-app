@@ -23,8 +23,8 @@ const Post = () => {
   const commentRef = React.useRef();
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-    const loaderRef = useRef();
-    useEffect(() => {
+  const loaderRef = useRef();
+  useEffect(() => {
     const fetchPost = async () => {
       try {
         const response = await axios.get(`${apiUrl}/api/posts/${id}`, {
@@ -40,42 +40,41 @@ const Post = () => {
     fetchPost();
   }, [id, apiUrl, token]);
 
-      const fetchComments = useCallback(async (pageNumber) => {
-      try {
-        const response = await axios.get(`${apiUrl}/api/comments/${id}`, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          },
-          params: {
+  const fetchComments = useCallback(async (pageNumber) => {
+    try {
+      const response = await axios.get(`${apiUrl}/api/comments/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        params: {
           page: pageNumber,
         },
-        });
-        if (response.data.comments.length < 3) {
+      });
+      if (response.data.comments.length < 3) {
         setHasMore(false);
       }
 
-        if (response.data.comments.length > 0) {
-          setComments(prev => [...prev, ...response.data.comments]);
+      if (response.data.comments.length > 0) {
+        setComments(prev => [...prev, ...response.data.comments]);
       }
-      } catch (error) {
-        console.error('Error fetching comments:', error);
-      }
-    }, [page, id, apiUrl, token]);
+    } catch (error) {
+      console.error('Error fetching comments:', error);
+    }
+  }, [page, id, apiUrl, token]);
   useEffect(() => {
     if (hasMore) fetchComments(page);
-    console.log(comments)
   }, [page, hasMore]);
 
   const observer = useRef();
-    const lastPostRef = useCallback(node => {
-      if (observer.current) observer.current.disconnect();
-      observer.current = new IntersectionObserver(entries => {
-        if (entries[0].isIntersecting && hasMore) {
-          setPage(prev => prev + 1);
-        }
-      });
-      if (node) observer.current.observe(node);
-    }, [hasMore]);
+  const lastPostRef = useCallback(node => {
+    if (observer.current) observer.current.disconnect();
+    observer.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && hasMore) {
+        setPage(prev => prev + 1);
+      }
+    });
+    if (node) observer.current.observe(node);
+  }, [hasMore]);
 
   if (!post) return null;
 
@@ -123,10 +122,10 @@ const Post = () => {
       }
 
       const response = await axios.get(`${apiUrl}/api/posts/${id}`, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
       setPost(response.data);
     } catch (error) {
       console.error('Error toggling like:', error);
@@ -147,7 +146,8 @@ const Post = () => {
       });
       if (response.status === 201) {
         commentRef.current.value = '';
-        await fetchComments();
+        const newComment = response.data
+        setComments(prev => [newComment,...prev]);
       }
     } catch (error) {
       console.error('Error submitting comment:', error);
@@ -178,7 +178,7 @@ const Post = () => {
             <img src={post.profile_picture} alt="" className="w-[32px] h-[32px] rounded-full" />
             <h2 className="text-white font-semibold text-sm ml-4">{post.username}</h2>
             <div className='h-[3px] w-[3px] bg-white mx-2' ></div>
-            <button className='text-blue-500 font-bold ml-2 hover:text-blue-300'>Follow</button>
+            <button className='text-blue-500 font-bold ml-2 hover:text-blue-300 hover:cursor-pointer'>Follow</button>
             <div className={`flex flex-1 text-gray-400 text-xs ml-auto `}>
               <button onClick={() => setActivePostOptions({ postId: post.id, userId: post.user_id })} className='ml-auto'>
                 <BsThreeDots className="text-white w-5 h-5 cursor-pointer hover:text-gray-400" />
@@ -233,7 +233,7 @@ const Post = () => {
           <div className="absolute bottom-0 left-0 right-0 bg-zinc-900 px-6 py-4 border-t border-zinc-700">
             {/* Like / Comment / Share Icons */}
             <div className="flex gap-4 mb-2">
-              <CiHeart onClick={() => handleLikeToggle(post.id, post.liked_by_user)} className={`${post.liked_by_user ? 'text-red-500' : 'text-white'} w-7 h-7 cursor-pointer ${post.liked_by_user ? null:'hover:text-gray-400'}`} />
+              <CiHeart onClick={() => handleLikeToggle(post.id, post.liked_by_user)} className={`${post.liked_by_user ? 'text-red-500' : 'text-white'} w-7 h-7 cursor-pointer ${post.liked_by_user ? null : 'hover:text-gray-400'}`} />
               <IoChatbubbleOutline className="text-white w-7 h-7 cursor-pointer hover:text-gray-400" />
               <IoPaperPlaneSharp className="text-white w-7 h-7 cursor-pointer hover:text-gray-400" />
             </div>
@@ -265,29 +265,29 @@ const Post = () => {
       <div onClick={() => navigate(-1)} className="absolute top-4 right-4 text-white cursor-pointer z-50">
         <IoMdClose className='text-white text-4xl' />
       </div>
-       {activePostOptions && (
-              <div
-                className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
-                onClick={() => setActivePostOptions(null)} // Close on outside click
-              >
-                <div
-                  className="flex flex-col items-center bg-zinc-800 text-white rounded-4xl shadow-lg w-[400px] h-[350px]"
-                  onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
-                >
-                  {activePostOptions.userId !== user.id ? <span className='flex text-red-400 font-bold py-4 hover:cursor-pointer'>Unfollow</span> :<span className='flex text-red-400 font-bold py-4 hover:cursor-pointer'>Delete</span>} {/*NEED TO WORK ON THIS FUNCTIONALITY */}
-                  <div className='flex-grow max-h-px min-w-[100%] bg-zinc-700'></div>
-                  <span className='flex text-white  py-4 hover:cursor-pointer'>Share to...</span> {/*NEED TO WORK ON THIS FUNCTIONALITY */}
-                  <div className='flex-grow max-h-px min-w-[100%] bg-zinc-700'></div>
-                  <span className='flex text-white  py-4 hover:cursor-pointer'>Copy link</span> {/*NEED TO WORK ON THIS FUNCTIONALITY */}
-                  <div className='flex-grow max-h-px min-w-[100%] bg-zinc-700'></div>
-                  {activePostOptions.userId === user.id ? <span className='flex text-white  py-4 hover:cursor-pointer'>Edit</span> : <Link to={`/post/${activePostOptions.postId}`}><span className='flex text-white  py-4 hover:cursor-pointer'>Go to Post</span></Link>} {/*NEED TO WORK ON THIS FUNCTIONALITY */}
-                  <div className='flex-grow max-h-px min-w-[100%] bg-zinc-700'></div>
-                  <span className='flex text-white  py-4 hover:cursor-pointer'>About this Account</span> {/*NEED TO WORK ON THIS FUNCTIONALITY */}
-                  <div className='flex-grow max-h-px min-w-[100%] bg-zinc-700'></div>
-                  <span onClick={() => setActivePostOptions(null)} className='flex text-white  py-4 hover:cursor-pointer'>Cancel</span>
-                </div>
-              </div>
-            )}
+      {activePostOptions && (
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
+          onClick={() => setActivePostOptions(null)} // Close on outside click
+        >
+          <div
+            className="flex flex-col items-center bg-zinc-800 text-white rounded-4xl shadow-lg w-[400px] h-[350px]"
+            onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
+          >
+            {activePostOptions.userId !== user.id ? <span className='flex text-red-400 font-bold py-4 hover:cursor-pointer'>Unfollow</span> : <span className='flex text-red-400 font-bold py-4 hover:cursor-pointer'>Delete</span>} {/*NEED TO WORK ON THIS FUNCTIONALITY */}
+            <div className='flex-grow max-h-px min-w-[100%] bg-zinc-700'></div>
+            <span className='flex text-white  py-4 hover:cursor-pointer'>Share to...</span> {/*NEED TO WORK ON THIS FUNCTIONALITY */}
+            <div className='flex-grow max-h-px min-w-[100%] bg-zinc-700'></div>
+            <span className='flex text-white  py-4 hover:cursor-pointer'>Copy link</span> {/*NEED TO WORK ON THIS FUNCTIONALITY */}
+            <div className='flex-grow max-h-px min-w-[100%] bg-zinc-700'></div>
+            {activePostOptions.userId === user.id ? <span className='flex text-white  py-4 hover:cursor-pointer'>Edit</span> : <Link to={`/post/${activePostOptions.postId}`}><span className='flex text-white  py-4 hover:cursor-pointer'>Go to Post</span></Link>} {/*NEED TO WORK ON THIS FUNCTIONALITY */}
+            <div className='flex-grow max-h-px min-w-[100%] bg-zinc-700'></div>
+            <span className='flex text-white  py-4 hover:cursor-pointer'>About this Account</span> {/*NEED TO WORK ON THIS FUNCTIONALITY */}
+            <div className='flex-grow max-h-px min-w-[100%] bg-zinc-700'></div>
+            <span onClick={() => setActivePostOptions(null)} className='flex text-white  py-4 hover:cursor-pointer'>Cancel</span>
+          </div>
+        </div>
+      )}
     </>
   );
 };
