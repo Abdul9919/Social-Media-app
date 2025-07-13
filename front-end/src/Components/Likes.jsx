@@ -20,14 +20,13 @@ export const Likes = ({ activePostLikes, setActivePostLikes }) => {
                     page: pageNumber,
                 },
             })
-            if (response.data.length < 6) {
+            if (response.data.length < 5) {
                 setHasMore(false);
             }
 
             if (response.data.length > 0) {
                 setUsers(prev => [...prev, ...response.data]);
             }
-            console.log(users)
         } catch (error) {
             console.log(error.message)
         }
@@ -55,7 +54,7 @@ export const Likes = ({ activePostLikes, setActivePostLikes }) => {
             onClick={() => setActivePostLikes(null)} // Close on outside click
         >
             <div
-                className="flex flex-col items-center bg-zinc-800 text-white rounded-4xl shadow-lg w-[560px] h-[480px]"
+                className="flex flex-col items-center bg-zinc-800 text-white rounded-4xl shadow-lg w-[560px] h-[413px]"
                 onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
             >
                 <div className='flex justify-center min-w-full my-4 ml-4'>

@@ -8,6 +8,7 @@ import { Link } from 'react-router-dom';
 import { AuthContext } from '../Contexts/AuthContext';
 import { BsThreeDots } from "react-icons/bs";
 import { useCallback } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 const Post = () => {
   const { id } = useParams();
@@ -24,6 +25,60 @@ const Post = () => {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const loaderRef = useRef();
+  const queryClient = useQueryClient();
+
+  const { mutate: handleLikeToggle } = useMutation({
+    mutationKey: ['toggleLike'],
+    mutationFn: async ({ postId, alreadyLiked }) => {
+      if (alreadyLiked) {
+        return await axios.delete(`${apiUrl}/api/likes/${postId}`, {
+          headers: {
+
+            Authorization: `Bearer ${token}`
+          }
+        })
+      } else {
+        return await axios.post(`${apiUrl}/api/likes/${postId}`, {}, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+      }
+    },
+    onMutate: async ({ postId, alreadyLiked }) => {
+      //await queryClient.cancelQueries(['posts']);
+      const previousPosts = queryClient.getQueryData(['posts']);
+
+      queryClient.setQueryData(['posts'], (old) => ({
+        ...old,
+        pages: old?.pages.map((page) => ({
+          ...page,
+          posts: page.posts.map((post) =>
+            post.id === postId
+              ? {
+                ...post,
+                liked_by_user: !alreadyLiked,
+                like_count: alreadyLiked ? post.like_count - 1 : post.like_count + 1,
+              }
+              : post
+          ),
+        })),
+      }));
+
+      return { previousPosts };
+    },
+
+    onError: (err, variables, context) => {
+      // rollback if error occurs
+      queryClient.setQueryData(['posts'], context.previousPosts);
+    },
+
+    onSettled: () => {
+      queryClient.invalidateQueries(['posts']);
+    },
+
+  })
+
   useEffect(() => {
     const fetchPost = async () => {
       try {
@@ -39,6 +94,7 @@ const Post = () => {
     };
     fetchPost();
   }, [id, apiUrl, token]);
+
 
   const fetchComments = useCallback(async (pageNumber) => {
     try {
@@ -104,34 +160,6 @@ const Post = () => {
     }
   }
 
-  const handleLikeToggle = async (postId, alreadyLiked) => {
-    try {
-      if (alreadyLiked) {
-        await axios.delete(`${apiUrl}/api/likes/${postId}`, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
-      } else {
-        await axios.post(`${apiUrl}/api/likes/${postId}`, {}, {
-          headers: {
-
-            Authorization: `Bearer ${token}`
-          }
-        });
-      }
-
-      const response = await axios.get(`${apiUrl}/api/posts/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      setPost(response.data);
-    } catch (error) {
-      console.error('Error toggling like:', error);
-    }
-  };
-
   const handleSubmit = async (e, postId) => {
     e.preventDefault();
     const comment = commentRef.current.value.trim();
@@ -147,7 +175,7 @@ const Post = () => {
       if (response.status === 201) {
         commentRef.current.value = '';
         const newComment = response.data
-        setComments(prev => [newComment,...prev]);
+        setComments(prev => [newComment, ...prev]);
       }
     } catch (error) {
       console.error('Error submitting comment:', error);
@@ -233,7 +261,7 @@ const Post = () => {
           <div className="absolute bottom-0 left-0 right-0 bg-zinc-900 px-6 py-4 border-t border-zinc-700">
             {/* Like / Comment / Share Icons */}
             <div className="flex gap-4 mb-2">
-              <CiHeart onClick={() => handleLikeToggle(post.id, post.liked_by_user)} className={`${post.liked_by_user ? 'text-red-500' : 'text-white'} w-7 h-7 cursor-pointer ${post.liked_by_user ? null : 'hover:text-gray-400'}`} />
+              <CiHeart onClick={() => handleLikeToggle({postId:post.id, alreadyLiked:post.liked_by_user})} className={`${post.liked_by_user ? 'text-red-500' : 'text-white'} w-7 h-7 cursor-pointer ${post.liked_by_user ? null : 'hover:text-gray-400'}`} />
               <IoChatbubbleOutline className="text-white w-7 h-7 cursor-pointer hover:text-gray-400" />
               <IoPaperPlaneSharp className="text-white w-7 h-7 cursor-pointer hover:text-gray-400" />
             </div>
