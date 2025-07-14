@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { IoMdClose } from "react-icons/io";
@@ -7,8 +7,9 @@ import { IoChatbubbleOutline, IoPaperPlaneSharp } from "react-icons/io5";
 import { Link } from 'react-router-dom';
 import { AuthContext } from '../Contexts/AuthContext';
 import { BsThreeDots } from "react-icons/bs";
-import { useCallback } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient, useQuery, useInfiniteQuery } from '@tanstack/react-query'
+import { useInView } from "react-intersection-observer";
+import Spinner from './Spinner.jsx'
 
 const Post = () => {
   const { id } = useParams();
@@ -18,13 +19,13 @@ const Post = () => {
   const token = localStorage.getItem('token');
   const apiUrl = import.meta.env.VITE_API_URL;
 
-  const [post, setPost] = useState(null);
-  const [comments, setComments] = useState([]);
+  //const [post, setPost] = useState(null);
+  //const [comments, setComments] = useState([]);
   const [activePostOptions, setActivePostOptions] = useState(null);
   const commentRef = React.useRef();
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const loaderRef = useRef();
+  //const [page, setPage] = useState(1);
+  //const [hasMore, setHasMore] = useState(true);
+  // const loaderRef = useRef();
   const queryClient = useQueryClient();
 
   const { mutate: handleLikeToggle } = useMutation({
@@ -79,60 +80,69 @@ const Post = () => {
 
   })
 
-  useEffect(() => {
-    const fetchPost = async () => {
-      try {
-        const response = await axios.get(`${apiUrl}/api/posts/${id}`, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
-        setPost(response.data);
-      } catch (error) {
-        console.error('Error fetching post:', error);
-      }
-    };
-    fetchPost();
-  }, [id, apiUrl, token]);
-
-
-  const fetchComments = useCallback(async (pageNumber) => {
-    try {
-      const response = await axios.get(`${apiUrl}/api/comments/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        },
-        params: {
-          page: pageNumber,
-        },
-      });
-      if (response.data.comments.length < 3) {
-        setHasMore(false);
-      }
-
-      if (response.data.comments.length > 0) {
-        setComments(prev => [...prev, ...response.data.comments]);
-      }
-    } catch (error) {
-      console.error('Error fetching comments:', error);
-    }
-  }, [page, id, apiUrl, token]);
-  useEffect(() => {
-    if (hasMore) fetchComments(page);
-  }, [page, hasMore]);
-
-  const observer = useRef();
-  const lastPostRef = useCallback(node => {
-    if (observer.current) observer.current.disconnect();
-    observer.current = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting && hasMore) {
-        setPage(prev => prev + 1);
+  const fetchPost = async () => {
+    const response = await axios.get(`${apiUrl}/api/posts/${id}`, {
+      headers: {
+        Authorization: `Bearer ${token}`
       }
     });
-    if (node) observer.current.observe(node);
-  }, [hasMore]);
+    return response.data
+  };
 
-  if (!post) return null;
+  const { data: post, isLoading, isError } = useQuery({
+    queryKey: ['post', id],
+    queryFn: fetchPost
+  })
+
+
+  const fetchComments = async ({ pageParam = 1 }) => {
+    const response = await axios.get(`${apiUrl}/api/comments/${id}`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      },
+      params: {
+        page: pageParam,
+      },
+    });
+    const { comments } = response.data;
+    const totalPages = response.data.totalPages
+
+    return {
+      comments,
+      nextPage: pageParam + 1,
+      currentPage: pageParam,
+      totalPages
+    };
+  };
+  const { data, fetchNextPage,
+    isFetchingNextPage, hasNextPage } = useInfiniteQuery({
+      queryKey: ['comments', id],
+      queryFn: fetchComments,
+      initialPageParam: 1,
+      getNextPageParam: (lastPage) => {
+        return lastPage.totalPages !== lastPage.currentPage ?  lastPage.nextPage : undefined
+      }
+    })
+
+  const { ref, inView } = useInView({
+  threshold: 0.1, // Trigger when 10% of the element is visible
+});
+
+  useEffect(() => {
+  if (
+    inView &&
+    hasNextPage &&
+    !isFetchingNextPage
+  ) {
+    const lastPage = data?.pages[data.pages.length - 1];
+    if (lastPage?.currentPage < lastPage?.totalPages) {
+      fetchNextPage();
+    }
+  }
+}, [fetchNextPage, inView, isFetchingNextPage, hasNextPage, data]);
+
+
+
 
   const getCommentAge = (createdAt) => {
     const postDate = new Date(createdAt);
@@ -160,27 +170,38 @@ const Post = () => {
     }
   }
 
-  const handleSubmit = async (e, postId) => {
-    e.preventDefault();
-    const comment = commentRef.current.value.trim();
-    if (!comment) return; // Prevent submission of empty comments
-    try {
-      const response = await axios.post(`${apiUrl}/api/comments/${postId}`, {
+  const { mutateAsync: postComment } = useMutation({
+    mutationKey: ['comment'],
+    mutationFn: async ({ postId, comment }) => {
+      return await axios.post(`${apiUrl}/api/comments/${postId}`, {
         content: comment
       }, {
         headers: {
           Authorization: `Bearer ${token}`
         }
       });
-      if (response.status === 201) {
-        commentRef.current.value = '';
-        const newComment = response.data
-        setComments(prev => [newComment, ...prev]);
-      }
-    } catch (error) {
-      console.error('Error submitting comment:', error);
-    }
-  };
+    },
+    onMutate: () => {
+      commentRef.current.value = ''
+    },
+    onSuccess: () => {
+    // ✅ Invalidate the specific query key to refetch fresh data
+    queryClient.invalidateQueries(['comments', id]);
+  }
+  })
+
+  const handleSubmit = async (e, postId) => {
+    e.preventDefault()
+    const comment = commentRef.current.value
+    postComment({ postId, comment })
+  }
+
+  if (isLoading) {
+    return (<Spinner />)
+  }
+  if (isError) {
+    return <div>Error</div>
+  }
 
   return (
     <>
@@ -222,38 +243,45 @@ const Post = () => {
           </div>
 
           {/* Scrollable Comments */}
-          <div className="overflow-y-auto pr-2 mb-48 no-scrollbar w-full">
-            {comments.map((comment, index) => (
-              <div ref={index === comments.length - 1 ? lastPostRef : null} key={comment.id} className="py-4 flex gap-3 mr-6 w-full">
-                {/* Profile Picture */}
-                <img
-                  src={comment.profile_picture}
-                  alt=""
-                  className="w-[32px] h-[32px] rounded-full flex-shrink-0"
-                />
+          <div className="overflow-y-auto pr-2 mb-48 no-scrollbar w-full" style={{ height: 'calc(100% - 200px)' }}>
+            {data?.pages?.flatMap((page) =>
+              page.comments.map((comment) => (
+                <div key={comment.id} className="py-4 flex gap-3 mr-6 w-full">
+                  {/* Profile Picture */}
+                  <img
+                    src={comment.profile_picture}
+                    alt=""
+                    className="w-[32px] h-[32px] rounded-full flex-shrink-0"
+                  />
 
-                {/* Comment Content */}
-                <div className="inline flex-col ">
-                  <p className="text-left text-white text-sm leading-snug">
-                    <span className="font-semibold inline-block mr-2">{comment.username}</span>
-                    <span className="inline align-top">{comment.content}</span>
+                  {/* Comment Content */}
+                  <div className="inline flex-col ">
+                    <p className="text-left text-white text-sm leading-snug">
+                      <span className="font-semibold inline-block mr-2">{comment.username}</span>
+                      <span className="inline align-top">{comment.content}</span>
 
-                  </p>
+                    </p>
 
-                  <div className="flex items-center text-zinc-500 text-xs mt-1">
-                    {getCommentAge(comment.created_at)}
-                    <span className="ml-2">0 likes</span> {/* I NEED TO ADD A COMMENT LIKE_COUNT */}
-                    <span className="ml-2 hover:cursor-pointer hover:text-zinc-300">Reply</span> {/* ALSO A REPLY FUNCTION*/}
+                    <div className="flex items-center text-zinc-500 text-xs mt-1">
+                      {getCommentAge(comment.created_at)}
+                      <span className="ml-2">0 likes</span> {/* I NEED TO ADD A COMMENT LIKE_COUNT */}
+                      <span className="ml-2 hover:cursor-pointer hover:text-zinc-300">Reply</span> {/* ALSO A REPLY FUNCTION*/}
+                    </div>
                   </div>
+                  <CiHeart className="flex ml-auto text-white min-w-4 min-h-4 w-4 h-4 cursor-pointer hover:text-red-500" /> {/*ALSO NEED TO ADD LIKES FOR COMMENTS MY GODDDDDDD*/}
                 </div>
-                <CiHeart className="flex ml-auto text-white min-w-4 min-h-4 w-4 h-4 cursor-pointer hover:text-red-500" /> {/*ALSO NEED TO ADD LIKES FOR COMMENTS MY GODDDDDDD*/}
-              </div>
-            ))}
-            {hasMore && (
-              <div ref={loaderRef} className="text-white mt-4">
-                Loading more posts...
-              </div>
-            )}
+              )))}
+            <div
+              ref={ref}
+              className="h-10 flex items-center justify-center text-white mt-4"
+              style={{ minHeight: '40px' }}
+            >
+              {isFetchingNextPage ? (
+                'Loading...'
+              ) : (
+                !data?.pages?.[0]?.comments?.length && <span>No comments yet</span>
+              )}
+            </div>
           </div>
 
 
@@ -261,7 +289,7 @@ const Post = () => {
           <div className="absolute bottom-0 left-0 right-0 bg-zinc-900 px-6 py-4 border-t border-zinc-700">
             {/* Like / Comment / Share Icons */}
             <div className="flex gap-4 mb-2">
-              <CiHeart onClick={() => handleLikeToggle({postId:post.id, alreadyLiked:post.liked_by_user})} className={`${post.liked_by_user ? 'text-red-500' : 'text-white'} w-7 h-7 cursor-pointer ${post.liked_by_user ? null : 'hover:text-gray-400'}`} />
+              <CiHeart onClick={() => handleLikeToggle(post.id, post.liked_by_user)} className={`${post.liked_by_user ? 'text-red-500' : 'text-white'} w-7 h-7 cursor-pointer ${post.liked_by_user ? null : 'hover:text-gray-400'}`} />
               <IoChatbubbleOutline className="text-white w-7 h-7 cursor-pointer hover:text-gray-400" />
               <IoPaperPlaneSharp className="text-white w-7 h-7 cursor-pointer hover:text-gray-400" />
             </div>

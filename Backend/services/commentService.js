@@ -14,20 +14,24 @@ const getComments = async (userId, postId, page) => {
         error.statusCode = 400
         throw error
     }
-    let responseData;
-    if (page === 1) {
-        const cached = await client.get(`post_comments:${postId}_${userId}:first_page`);
-        if (cached) {
-            return responseData = { comments: JSON.parse(cached) };
-        }
-    }
+    
     const itemsPerPage = 5;
     const offSet = (page - 1) * itemsPerPage;
 
     const comments = await commentRepository.getPostComments(postId, itemsPerPage, offSet);
     const count = await commentRepository.getCommentCount(postId);
 
-    responseData = { count: count, comments: comments };
+    const totalPages = Math.ceil(parseInt(count.count) / itemsPerPage);
+
+    let responseData;
+    if (page === 1) {
+        const cached = await client.get(`post_comments:${postId}_${userId}:first_page`);
+        if (cached) {
+            return responseData = { comments: JSON.parse(cached), totalPages };
+        }
+    }
+
+    responseData = { count: count, comments: comments, totalPages};
     return responseData
 
 }
@@ -35,19 +39,19 @@ const getComments = async (userId, postId, page) => {
 const createComment = async (userId, postId, content) => {
 
     if (!userId) {
-        const error = new Eroor('Unauthorized');
+        const error = new Error('Unauthorized');
         error.statusCode = 401
         throw error
     }
     // Validation
     if (!content) {
-        const error = new Eroor('Content is required');
+        const error = new Error('Content is required');
         error.statusCode = 400
         throw error
     }
 
     if (!postId || isNaN(postId)) {
-        const error = new Eroor('Valid post id is required');
+        const error = new Error('Valid post id is required');
         error.statusCode = 400
         throw error
     }
