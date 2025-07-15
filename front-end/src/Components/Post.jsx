@@ -46,39 +46,8 @@ const Post = () => {
         });
       }
     },
-    onMutate: async ({ postId, alreadyLiked }) => {
-      //await queryClient.cancelQueries(['posts']);
-      const previousPosts = queryClient.getQueryData(['posts']);
-
-      queryClient.setQueryData(['posts'], (old) => ({
-        ...old,
-        pages: old?.pages.map((page) => ({
-          ...page,
-          posts: page.posts.map((post) =>
-            post.id === postId
-              ? {
-                ...post,
-                liked_by_user: !alreadyLiked,
-                like_count: alreadyLiked ? post.like_count - 1 : post.like_count + 1,
-              }
-              : post
-          ),
-        })),
-      }));
-
-      return { previousPosts };
-    },
-
-    onError: (err, variables, context) => {
-      // rollback if error occurs
-      queryClient.setQueryData(['posts'], context.previousPosts);
-    },
-
-    onSettled: () => {
-      queryClient.invalidateQueries(['posts']);
-    },
-
-  })
+    onSuccess: () => queryClient.invalidateQueries(['post', id]),
+  });
 
   const fetchPost = async () => {
     const response = await axios.get(`${apiUrl}/api/posts/${id}`, {
@@ -106,11 +75,12 @@ const Post = () => {
     });
     const { comments } = response.data;
     const totalPages = response.data.totalPages
+    const currentPage = pageParam
 
     return {
       comments,
-      nextPage: pageParam + 1,
-      currentPage: pageParam,
+      currentPage,
+      nextPage: currentPage < totalPages ? pageParam + 1 : undefined,
       totalPages
     };
   };
@@ -289,7 +259,7 @@ const Post = () => {
           <div className="absolute bottom-0 left-0 right-0 bg-zinc-900 px-6 py-4 border-t border-zinc-700">
             {/* Like / Comment / Share Icons */}
             <div className="flex gap-4 mb-2">
-              <CiHeart onClick={() => handleLikeToggle(post.id, post.liked_by_user)} className={`${post.liked_by_user ? 'text-red-500' : 'text-white'} w-7 h-7 cursor-pointer ${post.liked_by_user ? null : 'hover:text-gray-400'}`} />
+              <CiHeart onClick={() => handleLikeToggle({postId:post.id, alreadyLiked:post.liked_by_user})} className={`${post.liked_by_user ? 'text-red-500' : 'text-white'} w-7 h-7 cursor-pointer ${post.liked_by_user ? null : 'hover:text-gray-400'}`} />
               <IoChatbubbleOutline className="text-white w-7 h-7 cursor-pointer hover:text-gray-400" />
               <IoPaperPlaneSharp className="text-white w-7 h-7 cursor-pointer hover:text-gray-400" />
             </div>
