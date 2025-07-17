@@ -9,6 +9,7 @@ import { Register } from './Components/Pages/Register'
 import { PostOptions } from './Components/PostOptions'
 import Spinner from './Components/Spinner'
 import lazyWithDelay from './Utils/lazyWithDelay'
+import { Profile } from './Components/Pages/Profile'
 const Post = lazyWithDelay(() => import('./Components/Post'), 300)
 
 function App() {
@@ -23,10 +24,11 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
 
-          <Route path="/post/:id" element={<Suspense fallback={<Spinner />}><Post /></Suspense>} />
+          <Route path="/post/:id" element={<PrivateRoute><Suspense fallback={<Spinner />}><Post /></Suspense> </PrivateRoute>} />
 
           <Route path="/spinner" element={<Spinner />} />
-          <Route path="/post/options/:id" element={<PostOptions />} />
+          <Route path="/post/options/:id" element={<PrivateRoute><PostOptions /></PrivateRoute>} />
+          <Route path='/profile' element={<PrivateRoute><Suspense fallback={<Spinner />}><Profile/></Suspense></PrivateRoute>}/>
         </Routes>
     </AuthProvider>
   )

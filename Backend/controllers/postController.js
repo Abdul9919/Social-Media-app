@@ -2,6 +2,8 @@ const { pool } = require('../Database/dbconnect.js');
 const cloudinary = require('../config/cloudinary.js');
 const fs = require('fs/promises');
 const { client } = require('../Database/redis.js');
+const postService = require('../services/postService.js');
+
 const getPosts = async (req, res) => {
   try {
     const userId = req.user?.id;
@@ -263,4 +265,14 @@ const getSinglePost = async (req, res) => {
   }
 };
 
-module.exports = { getPosts, updatePost, deletePost, createPost, getSinglePost }
+const getUserPosts = async (req,res) =>{
+  try {
+    const user = req.user.id;
+    const userPosts = await postService.getUserPosts(user);
+    res.status(200).json(userPosts)
+  } catch (error) {
+    res.status(error.statusCode || 500).json({ message: error.message || 'Something went wrong' });
+  }
+}
+
+module.exports = { getPosts, updatePost, deletePost, createPost, getSinglePost, getUserPosts }

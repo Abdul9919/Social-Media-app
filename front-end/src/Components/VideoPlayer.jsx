@@ -3,6 +3,7 @@ import React, { useEffect, useRef } from 'react';
 const VideoPlayer = ({ src }) => {
   const videoRef = useRef(null);
 
+
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -40,6 +41,7 @@ const VideoPlayer = ({ src }) => {
       loop
       playsInline
     />
+    
   );
 };
 
