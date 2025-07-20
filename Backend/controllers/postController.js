@@ -267,7 +267,7 @@ const getSinglePost = async (req, res) => {
 
 const getUserPosts = async (req,res) =>{
   try {
-    const user = req.user.id;
+    const user = req.params.id;
     const userPosts = await postService.getUserPosts(user);
     res.status(200).json(userPosts)
   } catch (error) {

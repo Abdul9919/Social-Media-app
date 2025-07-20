@@ -12,6 +12,7 @@ import { PostOptions } from '../PostOptions';
 import { Likes } from '../Likes';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import  Navbar  from '../Navbar';
+import {useNavigate} from 'react-router-dom'
 
 
 const Home = () => {
@@ -20,7 +21,7 @@ const Home = () => {
  // const { user } = useContext(AuthContext);
   //const [posts, setPosts] = useState([]);
   const apiUrl = import.meta.env.VITE_API_URL;
-  //const navigate = useNavigate();
+  const navigate = useNavigate();
   const [activePostOptions, setActivePostOptions] = useState(null);
   const [activePostLikes, setActivePostLikes] = useState(null)
   //const [page, setPage] = useState(1);
@@ -265,7 +266,7 @@ const Home = () => {
                         className="w-10 h-10 rounded-full object-cover"
                       />
                       <div className="flex items-center gap-1">
-                        <span className="font-semibold text-sm">{post.username || `user_${post.user_id}`}</span>
+                        <span onClick={() => navigate(`/profile/${post.user_id}`)} className="font-semibold text-sm hover:cursor-pointer">{post.username || `user_${post.user_id}`}</span>
                         <span className="text-gray-400 text-xs ml-1">{getPostAge(post.created_at)}</span>
                       </div>
                       <div className={`flex flex-1 text-gray-400 text-xs ml-auto `}>

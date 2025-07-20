@@ -20,7 +20,7 @@ const checkUser = async (email) => {
     return await checkEmail
 }
 
-const getUser = async (userId) => {
+const getCurrentUser = async (userId) => {
     const user = await pool.query('SELECT * FROM users WHERE id = $1', [userId])
     return await user
 }
@@ -35,12 +35,18 @@ const uploadProfilePicture = async (result, userId) => {
     return await user
 }
 
+const getUser = async (userId) => {
+    const user = await pool.query('SELECT users.username, users.profile_picture FROM users WHERE id = $1', [userId])
+    return await user
+}
+
 module.exports = {
     existingEmail,
     existingUsername,
     createUser,
     checkUser,
-    getUser,
+    getCurrentUser,
     changeUserInfo,
-    uploadProfilePicture
+    uploadProfilePicture,
+    getUser
 }

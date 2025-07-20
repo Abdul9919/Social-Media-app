@@ -24,10 +24,13 @@ const loginUser = async (req, res) => {
     }
 }
 
-const getUser = async (req, res) => {
+const getCurrentUser = async (req, res) => {
     const userId = req.user.id
+    if(!userId){
+        res.status(400).json('Unauthorized')
+    }
     try {
-        const user = await userService.getUser(userId, res)
+        const user = await userService.getCurrentUser(userId, res)
         res.status(200).json(user)
     } catch (error) {
         res.status(error.statusCode || 500).json({message : error.message || 'Something went wrong'})
@@ -59,6 +62,14 @@ const uploadProfilePicture = async (req, res) => {
     }
 }
 
+const getUser = async (req, res) => {
+    const userId = req.params.id
+    try {
+        const user = await userService.getUser(userId, res)
+        res.status(200).json(user)
+    } catch (error) {
+        res.status(error.statusCode || 500).json({message : error.message || 'Something went wrong'})
+    }
+}
 
-
-module.exports = { registerUser, loginUser, getUser, changeUserInfo, uploadProfilePicture };
+module.exports = { registerUser, loginUser, getCurrentUser, changeUserInfo, uploadProfilePicture, getUser };

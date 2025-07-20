@@ -1,4 +1,4 @@
-import React, { useContext } from 'react'
+import React from 'react'
 import Navbar from '../Navbar.jsx'
 import { AuthContext } from '../../Contexts/AuthContext.jsx'
 import { useQuery } from '@tanstack/react-query'
@@ -6,23 +6,31 @@ import axios from 'axios'
 import VideoPlayer from '../VideoPlayer.jsx'
 import Spinner from '../Spinner.jsx'
 import { FaHeart, FaComment  } from "react-icons/fa";
-import {useNavigate} from 'react-router-dom'
+import { useNavigate, useParams} from 'react-router-dom'
 
 export const Profile = () => {
-    const { user } = useContext(AuthContext)
+    const { id } = useParams()
     const apiUrl = import.meta.env.VITE_API_URL
-    const token = localStorage.getItem('token')
     const navigate = useNavigate()
 
+    const fetchUser = async () =>{
+        try {
+            const response = await axios.get(`${apiUrl}/api/users/${id}`, {});
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching user:', error);
+            return null;
+        }
+    }
+
+    const {data: user} = useQuery({
+        queryKey: ['user', id],
+        queryFn: fetchUser
+    })
+    //onsole.log(user)
     const fetchPosts = async () => {
         try {
-            const response = await axios.get(`${apiUrl}/api/posts/user-posts`, {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                },
-                /*params: {
-                    page: pageParam
-                },*/
+            const response = await axios.get(`${apiUrl}/api/posts/user-posts/${id}`,{            
             });
             console.log(response.data)
             return response.data;
@@ -33,7 +41,7 @@ export const Profile = () => {
     }
 
     const { data: posts, isLoading, isError } = useQuery({
-        queryKey: ['posts', user.id],
+        queryKey: ['posts',id],
         queryFn: fetchPosts
     })
 
@@ -52,14 +60,14 @@ export const Profile = () => {
                     <div className='flex ml-[5%] mr-[5%]'>
                         <div className='w-[270px] h-[175px]'>
                             <img
-                                src={user.profilePicture || '/default-profile.jpg'}
+                                src={user.profile_picture || '/default-profile.jpg'}
                                 alt="user"
                                 className="w-[150px] h-[150px] rounded-full object-cover"
                             />
                         </div>
                         <div className='flex flex-col'>
                             <div className='flex gap-4'>
-                                <h1 className="text-white text-2xl">{user.userName}</h1>
+                                <h1 className="text-white text-2xl">{user.username}</h1>
                                 <button className='w-[101px] h-[32px] font-bold rounded-md text-sm bg-zinc-800 hover:bg-zinc-700 hover:cursor-pointer'>Edit Profile</button>
                             </div>
                             <div className='flex gap-8 mt-6'>
@@ -72,7 +80,7 @@ export const Profile = () => {
                     <div>
                         <div className='relative w-full h-full grid grid-cols-3 gap-7'>
                             {posts?.map((post) => (
-                                <div onClick={()=> navigate(`/post/${post.id}`)} key={post.id} className="relative group w-[306px] h-[408px] overflow-hidden hover:cursor-pointer">
+                                <div onClick={()=> navigate(`/post/${post.post_id}`)} key={post.post_id} className="relative group w-[306px] h-[408px] overflow-hidden hover:cursor-pointer">
                                     {post.media_type === 'image' ? (
                                         <img
                                             src={post.media_url}

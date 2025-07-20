@@ -6,7 +6,7 @@ const multer  = require('multer')
 const upload = multer({ dest: 'posts/' })
 
 router.get('/',protect, getPosts);
-router.get('/user-posts',protect, getUserPosts);
+router.get('/user-posts/:id', getUserPosts);
 router.get('/:id', protect, getSinglePost); // Assuming you want to fetch a specific post by ID
 router.post('/', protect, upload.single('media'), createPost);
 router.put('/:id', protect, updatePost);

@@ -28,7 +28,7 @@ function App() {
 
           <Route path="/spinner" element={<Spinner />} />
           <Route path="/post/options/:id" element={<PrivateRoute><PostOptions /></PrivateRoute>} />
-          <Route path='/profile' element={<PrivateRoute><Suspense fallback={<Spinner />}><Profile/></Suspense></PrivateRoute>}/>
+          <Route path='/profile/:id' element={<PrivateRoute><Suspense fallback={<Spinner />}><Profile/></Suspense></PrivateRoute>}/>
         </Routes>
     </AuthProvider>
   )

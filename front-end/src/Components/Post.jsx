@@ -10,10 +10,11 @@ import { BsThreeDots } from "react-icons/bs";
 import { useMutation, useQueryClient, useQuery, useInfiniteQuery } from '@tanstack/react-query'
 import { useInView } from "react-intersection-observer";
 import Spinner from './Spinner.jsx'
+import { PostOptions } from './PostOptions.jsx';
+import { Likes } from './Likes.jsx';
 
 const Post = () => {
   const { id } = useParams();
-  const { user } = React.useContext(AuthContext);
 
   const navigate = useNavigate();
   const token = localStorage.getItem('token');
@@ -22,6 +23,7 @@ const Post = () => {
   //const [post, setPost] = useState(null);
   //const [comments, setComments] = useState([]);
   const [activePostOptions, setActivePostOptions] = useState(null);
+  const [activePostLikes, setActivePostLikes] = useState(null)
   const commentRef = React.useRef();
   //const [page, setPage] = useState(1);
   //const [hasMore, setHasMore] = useState(true);
@@ -90,26 +92,26 @@ const Post = () => {
       queryFn: fetchComments,
       initialPageParam: 1,
       getNextPageParam: (lastPage) => {
-        return lastPage.totalPages !== lastPage.currentPage ?  lastPage.nextPage : undefined
+        return lastPage.totalPages !== lastPage.currentPage ? lastPage.nextPage : undefined
       }
     })
 
   const { ref, inView } = useInView({
-  threshold: 0.1, // Trigger when 10% of the element is visible
-});
+    threshold: 0.1, // Trigger when 10% of the element is visible
+  });
 
   useEffect(() => {
-  if (
-    inView &&
-    hasNextPage &&
-    !isFetchingNextPage
-  ) {
-    const lastPage = data?.pages[data.pages.length - 1];
-    if (lastPage?.currentPage < lastPage?.totalPages) {
-      fetchNextPage();
+    if (
+      inView &&
+      hasNextPage &&
+      !isFetchingNextPage
+    ) {
+      const lastPage = data?.pages[data.pages.length - 1];
+      if (lastPage?.currentPage < lastPage?.totalPages) {
+        fetchNextPage();
+      }
     }
-  }
-}, [fetchNextPage, inView, isFetchingNextPage, hasNextPage, data]);
+  }, [fetchNextPage, inView, isFetchingNextPage, hasNextPage, data]);
 
 
 
@@ -155,9 +157,9 @@ const Post = () => {
       commentRef.current.value = ''
     },
     onSuccess: () => {
-    // ✅ Invalidate the specific query key to refetch fresh data
-    queryClient.invalidateQueries(['comments', id]);
-  }
+      // ✅ Invalidate the specific query key to refetch fresh data
+      queryClient.invalidateQueries(['comments', id]);
+    }
   })
 
   const handleSubmit = async (e, postId) => {
@@ -259,13 +261,13 @@ const Post = () => {
           <div className="absolute bottom-0 left-0 right-0 bg-zinc-900 px-6 py-4 border-t border-zinc-700">
             {/* Like / Comment / Share Icons */}
             <div className="flex gap-4 mb-2">
-              <CiHeart onClick={() => handleLikeToggle({postId:post.id, alreadyLiked:post.liked_by_user})} className={`${post.liked_by_user ? 'text-red-500' : 'text-white'} w-7 h-7 cursor-pointer ${post.liked_by_user ? null : 'hover:text-gray-400'}`} />
+              <CiHeart onClick={() => handleLikeToggle({ postId: post.id, alreadyLiked: post.liked_by_user })} className={`${post.liked_by_user ? 'text-red-500' : 'text-white'} w-7 h-7 cursor-pointer ${post.liked_by_user ? null : 'hover:text-gray-400'}`} />
               <IoChatbubbleOutline className="text-white w-7 h-7 cursor-pointer hover:text-gray-400" />
               <IoPaperPlaneSharp className="text-white w-7 h-7 cursor-pointer hover:text-gray-400" />
             </div>
 
             {/* Like Count */}
-            <div className="flex items-center text-white text-sm font-bold mb-1">
+            <div onClick={() => { setActivePostLikes({ postId: post.id, userId: post.user_id }) }} className="flex items-center text-white text-sm font-bold mb-1 hover:cursor-pointer">
               {post.like_count} likes
             </div>
 
@@ -292,27 +294,10 @@ const Post = () => {
         <IoMdClose className='text-white text-4xl' />
       </div>
       {activePostOptions && (
-        <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
-          onClick={() => setActivePostOptions(null)} // Close on outside click
-        >
-          <div
-            className="flex flex-col items-center bg-zinc-800 text-white rounded-4xl shadow-lg w-[400px] h-[350px]"
-            onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
-          >
-            {activePostOptions.userId !== user.id ? <span className='flex text-red-400 font-bold py-4 hover:cursor-pointer'>Unfollow</span> : <span className='flex text-red-400 font-bold py-4 hover:cursor-pointer'>Delete</span>} {/*NEED TO WORK ON THIS FUNCTIONALITY */}
-            <div className='flex-grow max-h-px min-w-[100%] bg-zinc-700'></div>
-            <span className='flex text-white  py-4 hover:cursor-pointer'>Share to...</span> {/*NEED TO WORK ON THIS FUNCTIONALITY */}
-            <div className='flex-grow max-h-px min-w-[100%] bg-zinc-700'></div>
-            <span className='flex text-white  py-4 hover:cursor-pointer'>Copy link</span> {/*NEED TO WORK ON THIS FUNCTIONALITY */}
-            <div className='flex-grow max-h-px min-w-[100%] bg-zinc-700'></div>
-            {activePostOptions.userId === user.id ? <span className='flex text-white  py-4 hover:cursor-pointer'>Edit</span> : <Link to={`/post/${activePostOptions.postId}`}><span className='flex text-white  py-4 hover:cursor-pointer'>Go to Post</span></Link>} {/*NEED TO WORK ON THIS FUNCTIONALITY */}
-            <div className='flex-grow max-h-px min-w-[100%] bg-zinc-700'></div>
-            <span className='flex text-white  py-4 hover:cursor-pointer'>About this Account</span> {/*NEED TO WORK ON THIS FUNCTIONALITY */}
-            <div className='flex-grow max-h-px min-w-[100%] bg-zinc-700'></div>
-            <span onClick={() => setActivePostOptions(null)} className='flex text-white  py-4 hover:cursor-pointer'>Cancel</span>
-          </div>
-        </div>
+        <PostOptions activePostOptions={activePostOptions} setActivePostOptions={setActivePostOptions} />
+      )}
+      {activePostLikes && (
+        <Likes activePostLikes={activePostLikes} setActivePostLikes={setActivePostLikes} />
       )}
     </>
   );

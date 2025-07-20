@@ -1,0 +1,18 @@
+{
+  "$schema": "https://wixplosives.github.io/codux-config-schema/codux.config.schema.json",
+  "newComponent": {
+        "componentsPath": "src/components",
+         "templatesPath": "src/component-templates"
+    },
+  "name": "Social Media App",
+  "rootDir": ".",
+  "components": {
+    "root": "src",
+    "dirs": ["Components"]
+  },
+  "devServerCommand": "npm run dev",
+  "editor": {
+    "host": "192.168.18.41",
+    "port": 5173
+  }
+}

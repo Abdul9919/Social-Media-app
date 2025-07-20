@@ -3,14 +3,14 @@ const { client } = require('../Database/redis.js');
 
 const getUserPosts = async (user) => {
     if(!user){
-        const error = new Error('Unauthorized');
-        error.statusCode = 401
+        const error = new Error('User id is required');
+        error.statusCode = 400
         throw error
     }
 
     const userPosts = await postRepository.getUserPosts(user)
 
-    if(userPosts.length === 0){
+    if(userPosts.length === 0){ 
         const error = new Error('No posts found for this user');
         error.statusCode = 404
         throw error
@@ -18,27 +18,28 @@ const getUserPosts = async (user) => {
 
     const posts =  await Promise.all(userPosts.map(async (post) => {
         let likeCount;
-        const likeCached = await client.get(`post:${post.id}:like_count`);
+        const likeCached = await client.get(`post:${post.post_id}:like_count`);
         if(likeCached){
             likeCount = JSON.parse(likeCached);
         }
         else {
-        const likeCount = await postRepository.getLikeCount(post.id);
-        await client.set(`post:${post.id}:like_count`, JSON.stringify(likeCount));
+        const likeCount = await postRepository.getLikeCount(post.post_id);
+        await client.set(`post:${post.post_id}:like_count`, likeCount);
       }
 
         let comments;
-        const cacheKey = `post_comments:${post.id}_${user}:first_page`;
+        const cacheKey = `post_comments:${post.post_id}_${user}:first_page`;
         const cached = await client.get(cacheKey);
         if(cached){
             comments = JSON.parse(cached);
         }
         else{
-        comments = await postRepository.getPostComments(post.id);
+        comments = await postRepository.getPostComments(post.post_id);
         await client.set(cacheKey, JSON.stringify(comments));
         }
         return await { ...post, comments, likeCount };
     }))
+   // console.log(posts)
     return await posts;
 }
 

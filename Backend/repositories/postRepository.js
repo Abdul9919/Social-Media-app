@@ -4,25 +4,35 @@ const { pool } = require('../Database/dbconnect.js');
 const getUserPosts = async (user) => {
     const posts = await pool.query(`
         SELECT
-          p.*,
-          u.username,
-          u,profile_picture,
-          COALESCE(c.comment_count, 0) AS comment_count,
-          EXISTS (
-              SELECT 1 FROM likes
-              WHERE p.id = post_id AND user_id = $1
-          ) AS liked_by_user
-        FROM posts p
-        JOIN users u ON p.user_id = u.id
-        LEFT JOIN (
-            SELECT post_id, COUNT(*) AS comment_count
-            FROM comments
-            GROUP BY post_id
-        ) c ON c.post_id = p.id
-        WHERE p.user_id = $1
-        ORDER BY p.created_at DESC
+    p.id              AS post_id,          -- keep the post id
+    p.user_id,
+    p.created_at,
+    p.description,
+    p.media_url,
+    p.media_type,
+    p.likes,
+    p.comments,
+    u.id              AS user_id,          -- or use u.id AS author_id
+    u.username,
+    u.profile_picture,
+    COALESCE(c.comment_count, 0) AS comment_count,
+    EXISTS (
+        SELECT 1
+        FROM likes
+        WHERE post_id = p.id
+          AND user_id = $1
+    ) AS liked_by_user
+FROM posts p
+JOIN users u ON p.user_id = u.id
+LEFT JOIN (
+    SELECT post_id, COUNT(*) AS comment_count
+    FROM comments
+    GROUP BY post_id
+) c ON c.post_id = p.id
+WHERE p.user_id = $1
+ORDER BY p.created_at DESC;
         `, [user]);
-    
+    //console.log(user)
     return posts.rows
 }
 

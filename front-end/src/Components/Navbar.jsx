@@ -41,7 +41,7 @@ const Navbar = () => {
                 <h2 className="text-white text-lg font-bold">Create</h2>
               </div>
     
-              <div onClick={() => navigate(`/profile`)} className="flex gap-2 hover:opacity-70 hover:bg-zinc-800 hover:cursor-pointer transition duration-300 rounded-md p-2">
+              <div onClick={() => navigate(`/profile/${user.id}`)} className="flex gap-2 hover:opacity-70 hover:bg-zinc-800 hover:cursor-pointer transition duration-300 rounded-md p-2">
                 <img src={user.profilePicture} alt="profile" className="w-[30px] h-[30px] rounded-full" />
                 <h2 className="text-white text-lg font-bold">Profile</h2>
               </div>

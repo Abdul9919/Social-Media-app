@@ -69,8 +69,7 @@ const loginUser = async (email, password, res) => {
     return loginUser
 }
 
-const getUser = async (userId) => {
-
+const getCurrentUser = async (userId) => {
     const cachedUser = await client.get(`user:${userId}`);
 
     let user;
@@ -96,6 +95,25 @@ const getUser = async (userId) => {
     await client.del(`user:${userId}`);
 
     return user.rows
+
+}
+
+const getUser = async (userId) => {
+    if (!userId) {
+        const error = new Error('User id is required');
+        error.statusCode = 400
+        throw error
+    }
+
+    const user = await userRepository.getUser(userId)
+
+    if (user.rows.length === 0) {
+        const error = new Error('User does not exist');
+        error.statusCode = 404
+        throw error
+    }
+
+    return user.rows[0]
 
 }
 
@@ -165,7 +183,8 @@ const uploadProfilePicture = async (userId, file,res ) => {
 module.exports = {
     registerUser,
     loginUser,
-    getUser,
+    getCurrentUser,
     changeUserInfo,
-    uploadProfilePicture
+    uploadProfilePicture,
+    getUser
 }
