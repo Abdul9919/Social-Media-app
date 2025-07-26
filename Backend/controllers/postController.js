@@ -27,7 +27,7 @@ const getPosts = async (req, res) => {
           WHERE post_id = p.id AND user_id = $1
         ) AS liked_by_user
       FROM posts p
-      JOIN users u ON p.user_id = u.id
+      JOIN users u ON p.user_id = u.id 
       LEFT JOIN (
         SELECT post_id, COUNT(*) AS comment_count
         FROM comments
@@ -63,7 +63,7 @@ const getPosts = async (req, res) => {
       } else {
         const commentsResult = await pool.query(`
           SELECT 
-            comments.id, comments.content, comments.created_at,
+            comments.id, comments.user_id,comments.content, comments.created_at,
             users.username, users.profile_picture
           FROM comments
           JOIN users ON comments.user_id = users.id
@@ -122,12 +122,12 @@ const deletePost = async (req, res) => {
         posts.*, 
         users.username, 
         users.profile_picture,
-        COUNT(DISTINCT likes.user_id) AS like_count,
+        COUNT(likes.user_id) AS like_count,
         EXISTS (
           SELECT 1 FROM likes 
           WHERE likes.post_id = posts.id AND likes.user_id = $1
         ) AS liked_by_user,
-        COUNT(DISTINCT comments.id) AS comment_count
+        COUNT(comments.id) AS comment_count
       FROM posts
       JOIN users ON posts.user_id = users.id
       LEFT JOIN likes ON likes.post_id = posts.id

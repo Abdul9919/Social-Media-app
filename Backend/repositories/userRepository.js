@@ -36,7 +36,9 @@ const uploadProfilePicture = async (result, userId) => {
 }
 
 const getUser = async (userId) => {
-    const user = await pool.query('SELECT users.username, users.profile_picture FROM users WHERE id = $1', [userId])
+    const user = await pool.query(
+        'SELECT users.username, users.profile_picture, (SELECT COUNT(*) FROM followers WHERE following=users.id) AS follower_count, (SELECT COUNT(*) FROM followers WHERE followed_by=users.id) AS following_count, (SELECT COUNT(*) FROM posts WHERE user_id=users.id) AS post_count FROM users WHERE id = $1'
+        , [userId])
     return await user
 }
 

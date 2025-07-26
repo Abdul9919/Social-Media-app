@@ -9,8 +9,9 @@ const postRoutes = require('./routes/postRoutes.js')
 const commentRoutes = require('./routes/commentRoutes.js')
 const likeRoutes = require('./routes/likeRoutes.js');
 const {connectRedis, client}= require('./Database/redis.js');
+const helmet = require('helmet')
 
-app.use(express.json());
+app.use(express.json()); 
 
 (async () => {
   try {
@@ -40,4 +41,6 @@ initDB()
 
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
+
+app.use(helmet())
 });

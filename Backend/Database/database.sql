@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS users (
 
 
 CREATE INDEX IF NOT EXISTS posts_user_id_idx ON posts(user_id);
+CREATE INDEX IF NOT EXISTS posts_id_idx ON posts(id);
 
 CREATE TABLE IF NOT EXISTS comments (
         id SERIAL PRIMARY KEY,
@@ -44,8 +45,12 @@ CREATE TABLE IF NOT EXISTS likes (
         PRIMARY KEY (user_id, post_id),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+
+CREATE TABLE IF NOT EXISTS followers ( followed_by INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, following INTEGER NOT NULL REFERENCES users(id));
+
 CREATE INDEX IF NOT EXISTS likes_post_id_idx ON likes(post_id);
 CREATE INDEX IF NOT EXISTS likes_user_id_idx ON likes(user_id);
 
 CREATE INDEX IF NOT EXISTS idx_posts_created_at ON posts(created_at);
 CREATE INDEX IF NOT EXISTS idx_likes_post_user ON likes(post_id, user_id);
+CREATE INDEX IF NOT EXISTS followers_user_id ON followers(following, followed_by);

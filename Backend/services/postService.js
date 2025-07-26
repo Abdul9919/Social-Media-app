@@ -10,12 +10,6 @@ const getUserPosts = async (user) => {
 
     const userPosts = await postRepository.getUserPosts(user)
 
-    if(userPosts.length === 0){ 
-        const error = new Error('No posts found for this user');
-        error.statusCode = 404
-        throw error
-    }
-
     const posts =  await Promise.all(userPosts.map(async (post) => {
         let likeCount;
         const likeCached = await client.get(`post:${post.post_id}:like_count`);

@@ -37,7 +37,7 @@ ORDER BY p.created_at DESC;
 }
 
 const getPostComments = async (postId) =>{
-    const comments = await pool.query(`SELECT comments.id, comments.content,comments.created_at, users.username, users.profile_picture FROM comments JOIN users on comments.user_id = users.id WHERE post_id = $1 ORDER BY comments.created_at DESC LIMIT 5`, [postId]);
+    const comments = await pool.query(`SELECT comments.id, comments.content, comments.user_id,comments.created_at, users.username, users.profile_picture FROM comments JOIN users on comments.user_id = users.id WHERE post_id = $1 ORDER BY comments.created_at DESC LIMIT 5`, [postId]);
     return comments.rows
 }
 

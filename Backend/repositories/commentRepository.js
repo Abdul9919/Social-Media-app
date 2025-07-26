@@ -6,7 +6,7 @@ const getCommentCount = async (postId) => {
 }
 
 const getPostComments = async (postId, itemsPerPage, offSet) => {
-    const getPostComments = await pool.query('SELECT comments.id, comments.content, comments.created_at, users.username, users.profile_picture FROM comments JOIN users on comments.user_id = users.id WHERE post_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3', [postId, itemsPerPage, offSet])
+    const getPostComments = await pool.query('SELECT comments.id, comments.content, comments.created_at, comments.user_id,users.username, users.profile_picture FROM comments JOIN users on comments.user_id = users.id WHERE post_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3', [postId, itemsPerPage, offSet])
     return await getPostComments.rows
 }
 

@@ -32,12 +32,11 @@ export const Profile = () => {
         try {
             const response = await axios.get(`${apiUrl}/api/posts/user-posts/${id}`,{            
             });
-            console.log(response.data)
             return response.data;
         } catch (error) {
-            console.error('Error fetching posts:', error);
-            return [];
+            return []
         }
+            
     }
 
     const { data: posts, isLoading, isError } = useQuery({
@@ -71,9 +70,9 @@ export const Profile = () => {
                                 <button className='w-[101px] h-[32px] font-bold rounded-md text-sm bg-zinc-800 hover:bg-zinc-700 hover:cursor-pointer'>Edit Profile</button>
                             </div>
                             <div className='flex gap-8 mt-6'>
-                                <span className='text-zinc-400'><span className='font-bold text-white'>8</span> posts</span>
-                                <span className='text-zinc-400'><span className='font-bold text-white'>100</span> followers</span>
-                                <span className='text-zinc-400'><span className='font-bold text-white'>120</span> following</span>
+                                <span className='text-zinc-400'><span className='font-bold text-white'>{user.post_count}</span> posts</span>
+                                <span className='text-zinc-400'><span className='font-bold text-white'>{user.follower_count}</span> followers</span>
+                                <span className='text-zinc-400'><span className='font-bold text-white'>{user.following_count}</span> following</span>
                             </div>
                         </div>
                     </div>
@@ -107,6 +106,7 @@ export const Profile = () => {
                                     </div>
                                 </div>
                             ))}
+                            {posts?.length === 0 && <div className="text-white flex items-center justify-center text-xl">No posts to show</div>}
                         </div>
                     </div>
                 </div>

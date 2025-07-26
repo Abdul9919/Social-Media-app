@@ -229,7 +229,7 @@ const Post = () => {
                   {/* Comment Content */}
                   <div className="inline flex-col ">
                     <p className="text-left text-white text-sm leading-snug">
-                      <span className="font-semibold inline-block mr-2">{comment.username}</span>
+                      <span onClick={() => navigate(`/profile/${comment.user_id}`)} className="font-semibold inline-block mr-2 hover:cursor-pointer">{comment.username}</span>
                       <span className="inline align-top">{comment.content}</span>
 
                     </p>
