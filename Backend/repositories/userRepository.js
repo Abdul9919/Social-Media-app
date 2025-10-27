@@ -35,10 +35,10 @@ const uploadProfilePicture = async (result, userId) => {
     return await user
 }
 
-const getUser = async (userId) => {
+const getUser = async (userId, currentUser) => {
     const user = await pool.query(
-        'SELECT users.username, users.profile_picture, (SELECT COUNT(*) FROM followers WHERE following=users.id) AS follower_count, (SELECT COUNT(*) FROM followers WHERE followed_by=users.id) AS following_count, (SELECT COUNT(*) FROM posts WHERE user_id=users.id) AS post_count FROM users WHERE id = $1'
-        , [userId])
+        'SELECT users.id, users.username, users.profile_picture, EXISTS(SELECT 1 from followers WHERE following=$1 AND followed_by=$2) AS is_following,(SELECT COUNT(*) FROM followers WHERE following=users.id) AS follower_count, (SELECT COUNT(*) FROM followers WHERE followed_by=users.id) AS following_count, (SELECT COUNT(*) FROM posts WHERE user_id=users.id) AS post_count FROM users WHERE id = $1'
+        , [userId, currentUser])
     return await user
 }
 

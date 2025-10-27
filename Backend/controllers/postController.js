@@ -214,6 +214,10 @@ const getSinglePost = async (req, res) => {
         users.profile_picture,
         COUNT(DISTINCT likes.user_id) AS like_count,
         EXISTS (
+        SELECT 1 FROM followers 
+        WHERE followers.following = posts.user_id AND followers.followed_by = $1
+        ) AS is_following,
+        EXISTS (
             SELECT 1 FROM likes 
             WHERE likes.post_id = posts.id AND likes.user_id = $1
         ) AS liked_by_user,

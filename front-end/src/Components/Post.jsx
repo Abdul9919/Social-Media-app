@@ -168,6 +168,23 @@ const Post = () => {
     postComment({ postId, comment })
   }
 
+      const mutation = useMutation({
+        mutationFn: async(id)=>{
+                await axios.post(`${apiUrl}/api/follow/${id}`,{},{
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                })
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries(['user', id])
+        }
+    })
+
+    const handleFollow = (id) =>{
+        mutation.mutate(id)
+    }
+
   if (isLoading) {
     return (<Spinner />)
   }
@@ -197,9 +214,9 @@ const Post = () => {
           {/* Header */}
           <div className="flex items-center mb-4">
             <img src={post.profile_picture} alt="" className="w-[32px] h-[32px] rounded-full" />
-            <h2 className="text-white font-semibold text-sm ml-4">{post.username}</h2>
+            <h2 onClick={() => navigate(`/profile/${post.user_id}`)} className="text-white font-semibold text-sm ml-4 hover:cursor-pointer">{post.username}</h2>
             <div className='h-[3px] w-[3px] bg-white mx-2' ></div>
-            <button className='text-blue-500 font-bold ml-2 hover:text-blue-300 hover:cursor-pointer'>Follow</button>
+            {post?.is_following? null : <button  onClick={() => handleFollow(post.user_id)} className='text-blue-500 font-bold ml-2 hover:text-blue-300 hover:cursor-pointer'>Follow</button>}
             <div className={`flex flex-1 text-gray-400 text-xs ml-auto `}>
               <button onClick={() => setActivePostOptions({ postId: post.id, userId: post.user_id })} className='ml-auto'>
                 <BsThreeDots className="text-white w-5 h-5 cursor-pointer hover:text-gray-400" />
@@ -210,7 +227,7 @@ const Post = () => {
           {/* Description */}
           <div className="flex items-center mb-4">
             <img src={post.profile_picture} alt="" className="w-[32px] h-[32px] rounded-full" />
-            <h2 className="text-white font-semibold text-sm ml-4">{post.username}</h2>
+            <h2 onClick={() => navigate(`/profile/${post.user_id}`)} className="text-white font-semibold text-sm ml-4 hover:cursor-pointer">{post.username}</h2>
             <p className="text-white ml-2">{post.description}</p>
           </div>
 
@@ -273,7 +290,7 @@ const Post = () => {
 
             {/* View All Comments */}
             <div className="flex items-center text-gray-400 text-sm hover:text-gray-300 block mb-2">
-              {getCommentAge(post.created_at)} ago
+              {getCommentAge(post.created_at)}
             </div>
 
             {/* Comment Input */}

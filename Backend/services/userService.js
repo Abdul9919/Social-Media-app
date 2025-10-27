@@ -98,14 +98,14 @@ const getCurrentUser = async (userId) => {
 
 }
 
-const getUser = async (userId) => {
+const getUser = async (userId, currentUser) => {
     if (!userId) {
         const error = new Error('User id is required');
         error.statusCode = 400
         throw error
     }
 
-    const user = await userRepository.getUser(userId)
+    const user = await userRepository.getUser(userId, currentUser)
 
     if (user.rows.length === 0) {
         const error = new Error('User does not exist');

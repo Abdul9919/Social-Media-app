@@ -2,15 +2,18 @@ const express = require('express');
 require('dotenv').config();
 const {initDB,pool} = require('./Database/dbconnect.js');
 const cors = require('cors');
-const app = express();
 const userRoutes = require('./routes/userRoutes.js');
 const port = process.env.PORT || 5000;
 const postRoutes = require('./routes/postRoutes.js')
 const commentRoutes = require('./routes/commentRoutes.js')
 const likeRoutes = require('./routes/likeRoutes.js');
+const followRoutes = require('./routes/followRoute.js')
 const {connectRedis, client}= require('./Database/redis.js');
 const helmet = require('helmet')
 
+
+const app = express();
+app.use(helmet())
 app.use(express.json()); 
 
 (async () => {
@@ -34,6 +37,7 @@ app.use('/api/likes', likeRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/comments', commentRoutes);
+app.use('/api/follow', followRoutes)
 
 initDB()
   .then(() => {
@@ -42,5 +46,4 @@ initDB()
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
 
-app.use(helmet())
 });

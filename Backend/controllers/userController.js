@@ -64,8 +64,9 @@ const uploadProfilePicture = async (req, res) => {
 
 const getUser = async (req, res) => {
     const userId = req.params.id
+    const currentUser = req.user.id
     try {
-        const user = await userService.getUser(userId, res)
+        const user = await userService.getUser(userId, currentUser)
         res.status(200).json(user)
     } catch (error) {
         res.status(error.statusCode || 500).json({message : error.message || 'Something went wrong'})

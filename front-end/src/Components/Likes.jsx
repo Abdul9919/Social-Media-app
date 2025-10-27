@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react'
 import { IoMdClose } from "react-icons/io";
 import axios from 'axios'
+import {useNavigate} from 'react-router-dom'
 
 export const Likes = ({ activePostLikes, setActivePostLikes }) => {
     const [users, setUsers] = useState([])
@@ -10,6 +11,7 @@ export const Likes = ({ activePostLikes, setActivePostLikes }) => {
     const [page, setPage] = useState(1)
     const [hasMore, setHasMore] = useState(true);
     const loaderRef = useRef();
+    const navigate = useNavigate()
     const fetchUsers = async (pageNumber) => {
         try {
             const response = await axios.get(`${apiUrl}/api/likes/${postId}`, {
@@ -64,7 +66,7 @@ export const Likes = ({ activePostLikes, setActivePostLikes }) => {
                 <div className='flex-grow max-h-px min-w-[100%] bg-zinc-700'></div>
                 <div className='flex flex-col min-w-full overflow-y-auto'>
                     {users?.map((user, index) => (
-                        <div ref={index === users.length - 1 ? lastPostRef : null} key={user.user_id} className='flex items-center ml-4 my-2 gap-2'>
+                        <div ref={index === users.length - 1 ? lastPostRef : null} key={user.user_id} onClick={() => navigate(`/profile/${user.user_id}`)} className='flex items-center ml-4 my-2 gap-2 hover:cursor-pointer'>
                             <img
                                 src={user.profile_picture || '/default-profile.jpg'}
                                 alt="user"
