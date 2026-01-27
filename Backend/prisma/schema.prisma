@@ -1,0 +1,111 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             Int           @id @default(autoincrement())
+  username       String        @unique @db.VarChar(50)
+  email          String        @unique @db.VarChar(255)
+  password       String        @db.VarChar(255)
+  createdAt      DateTime?     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime?     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  profilePicture String?       @default("https://res.cloudinary.com/dv9af2izq/image/upload/v1751620689/default-profile-picture_jirerm.jpg") @map("profile_picture") @db.VarChar(255)
+  
+  comments       Comment[]
+  commentLikes   CommentLike[] // Added this
+  likes          Like[]
+  posts          Post[]
+  
+  // Fixed Follower relations
+  following      Follower[]    @relation("followers_followed_by")
+  followers      Follower[]    @relation("followers_following")
+
+  @@index([id], map: "followers_user_id_idx")
+  @@map("users")
+}
+
+model Post {
+  id            Int       @id @default(autoincrement())
+  userId        Int       @map("user_id")
+  createdAt     DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+  description   String?
+  mediaUrl      String    @map("media_url")
+  mediaType     String?   @map("media_type") @db.VarChar(10)
+  likesCount    Int?      @default(0) @map("likes")
+  commentsCount Int?      @default(0) @map("comments")
+  commentsRel   Comment[]
+  likesRel      Like[]
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([userId])
+  @@index([id])
+  @@index([createdAt], map: "idx_posts_created_at")
+  @@index([userId], map: "idx_posts_user_id")
+  @@map("posts")
+}
+
+model Comment {
+  id         Int           @id @default(autoincrement())
+  postId     Int           @map("post_id")
+  userId     Int           @map("user_id")
+  content    String        @db.VarChar(255)
+  likesCount Int           @default(0) @map("likes") // Added this
+  createdAt  DateTime?     @default(now()) @map("created_at") @db.Timestamp(6)
+  
+  post       Post          @relation(fields: [postId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  likesRel   CommentLike[] // Added relation field
+
+  @@index([postId])
+  @@index([userId])
+  @@index([postId], map: "idx_comments_post_id")
+  @@map("comments")
+}
+
+model Like {
+  postId    Int       @map("post_id")
+  userId    Int       @map("user_id")
+  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+  post      Post      @relation(fields: [postId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([userId, postId])
+  @@index([postId])
+  @@index([userId])
+  @@index([postId, userId], map: "idx_likes_post_user")
+  @@index([postId], map: "idx_likes_post_id")
+  @@map("likes")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model Follower {
+  followedBy    Int  @map("followed_by")
+  following     Int
+  
+  follower      User @relation("followers_followed_by", fields: [followedBy], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  followingUser User @relation("followers_following", fields: [following], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([followedBy, following]) // Added this to make the table valid
+  @@index([following, followedBy], map: "followers_user_id")
+  @@map("followers")
+}
+
+model CommentLike {
+  commentId Int       @map("comment_id")
+  userId    Int       @map("user_id")
+  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+
+  comment   Comment   @relation(fields: [commentId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([userId, commentId]) // Composite Primary Key
+  @@index([commentId])
+  @@index([userId])
+  @@map("comment_likes")
+}
