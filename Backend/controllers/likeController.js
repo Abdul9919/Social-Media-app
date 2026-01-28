@@ -9,8 +9,8 @@ const likePost = async (req, res) => {
         res.status(201).json({ message: 'Post liked' });
     } catch (error) {
         res
-      .status(error.statusCode || 500)
-      .json({ message: error.message || 'Something went wrong' });
+            .status(error.statusCode || 500)
+            .json({ message: error.message || 'Something went wrong' });
     }
 }
 
@@ -19,14 +19,14 @@ const unlikePost = async (req, res) => {
     const postId = req.params.postId;
 
     try {
-        await likeService.unlikePost(userId, postId );
+        await likeService.unlikePost(userId, postId);
 
         res.status(200).json({ message: 'Post unliked' });
     } catch (error) {
         res
-      .status(error.statusCode || 500)
-      .json({ message: error.message || 'Something went wrong' });
-      console.log(error.message)
+            .status(error.statusCode || 500)
+            .json({ message: error.message || 'Something went wrong' });
+        console.log(error.message)
     }
 }
 
@@ -37,7 +37,7 @@ const getLikes = async (req, res) => {
         const page = parseInt(req.query.page) || 1;
 
         const likes = await likeService.getLikes(userId, postId, page);
-        
+
 
         res.status(200).json(
             likes.map(({ username, profile_picture, user_id }) => ({
@@ -51,8 +51,22 @@ const getLikes = async (req, res) => {
     }
 }
 
+const likeComment = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const commentId = req.params.commentId;
+        const {postId} = req.body;
+        await likeService.likeComment(userId, commentId, postId);
+        res.status(201).json({ message: 'Comment liked' });
+    } catch (error) {
+        console.log(error);
+        res.status(error.statusCode || 500).json({ message: error.message || 'Internal server error' });
+    }
+}
+
 module.exports = {
     likePost,
     unlikePost,
-    getLikes
+    getLikes,
+    likeComment
 }

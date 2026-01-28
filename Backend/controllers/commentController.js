@@ -6,11 +6,11 @@ const getComments = async (req, res) => {
     const userId = req.user?.id
     const postId = req.params.postId;
     const page = parseInt(req.query.page) || 1;
-
+    // console.log("Fetching comments for postId:", postId, "page:", page, "userId:", userId);
     const responseData = await commentService.getComments(userId, postId, page)
-
     res.status(200).json(responseData)
     } catch (error) {
+      console.log(error)
     res.status(error.statusCode || 500).json({ message: error.message || 'Internal Server Error' });
   }
 }

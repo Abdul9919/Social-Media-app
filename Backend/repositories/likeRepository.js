@@ -1,4 +1,5 @@
-const { pool } = require('../Database/dbconnect.js');
+
+const { pool, prisma } = require('../Database/dbconnect.js');
 const { client } = require('../Database/redis.js');
 
 const existingLike = async (postId, userId) => {
@@ -38,9 +39,87 @@ const getLikes = async (postId, itemsPerPage, offSet) => {
     return await likes.rows
 }
 
+const likeComment = async (userId, commentId, postId) => {
+    let comments
+    const commentKey = `post_comments:${postId}_${userId}:first_page`;
+    const commentsCache = await client.get(commentKey);
+    if (commentsCache) {
+        comments = JSON.parse(commentsCache);
+    }
+
+    const existing = await prisma.commentLike.findUnique({
+        where: {
+            userId_commentId: {  // compound key object
+                userId: Number(userId),
+                commentId: Number(commentId),
+            },
+        },
+    });
+    console.log(existing);
+    if (existing === null) {
+        console.log('not existing executed')
+        await prisma.commentLike.create({
+            data: {
+                userId: userId,
+                commentId: Number(commentId)
+            }
+        });
+        await prisma.comment.update({
+            where: {
+                id: Number(commentId)
+            },
+            data: {
+                likesCount: {
+                    increment: 1
+                }
+            }
+        })
+        // const commentsModified = comments.map(comment => {
+        //     comment.likes++
+        // })
+        comments.forEach(comment => {
+            if(comment.id === Number(commentId)){
+                comment.likes++
+                comment.liked_by_user = true
+            }
+        })
+        await client.set(commentKey, JSON.stringify(comments), { EX: 3600 });
+    } else {
+        console.log('existing executed')
+        await prisma.commentLike.deleteMany({
+            where: {
+                userId: userId,
+                commentId: Number(commentId)
+            }
+        });
+        await prisma.comment.update({
+            where: {
+                id: Number(commentId)
+            },
+            data: {
+                likesCount: {
+                    decrement: 1
+                }
+            }
+        })
+        // const commentsModified = comments.map(comment => {
+        //     comment.likes--
+        // })
+        comments.forEach(comment => {
+            if(comment.id === Number(commentId)){
+                comment.likes--;
+                comment.liked_by_user = false;
+            }
+            
+        })
+        await client.set(commentKey, JSON.stringify(comments), { EX: 3600 });
+    }
+}
+
 module.exports = {
     existingLike,
     likePost,
     unlikePost,
-    getLikes
+    getLikes,
+    likeComment
 }

@@ -4,34 +4,30 @@ const { client } = require('../Database/redis.js');
 const getComments = async (userId, postId, page) => {
 
     if (!userId) {
-        const error = new Eroor('Unauthorized');
+        const error = new Error('Unauthorized');
         error.statusCode = 401
         throw error
     }
 
     if (!postId) {
-        const error = new Eroor('Post is required');
+        const error = new Error('Post is required');
         error.statusCode = 400
         throw error
     }
-    
-    const itemsPerPage = 5;
-    const offSet = (page - 1) * itemsPerPage;
-
-    const comments = await commentRepository.getPostComments(postId, itemsPerPage, offSet);
-    const count = await commentRepository.getCommentCount(postId);
-
-    const totalPages = Math.ceil(parseInt(count.count) / itemsPerPage);
 
     let responseData;
+    const itemsPerPage = 5;
+    const offSet = (page - 1) * itemsPerPage;
+    const count = await commentRepository.getCommentCount(postId);
+    const totalPages = Math.ceil(parseInt(count.count) / itemsPerPage);
     if (page === 1) {
         const cached = await client.get(`post_comments:${postId}_${userId}:first_page`);
         if (cached) {
             return responseData = { comments: JSON.parse(cached), totalPages };
         }
     }
-
-    responseData = { count: count, comments: comments, totalPages};
+    const comments = await commentRepository.getPostComments(postId, itemsPerPage, offSet, userId);
+    responseData = { count: count, comments: comments, totalPages };
     return responseData
 
 }

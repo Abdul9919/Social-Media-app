@@ -39,9 +39,26 @@ const getLikes = async (userId, postId, page) => {
     throw error
   }
   return likes
+}
+
+const likeComment = async (userId, commentId, postId) => {
+  if(!userId){
+    const error = new Error('Unauthorized');
+    error.statusCode = 401
+    console.log(error)
+    throw error
+  }
+  if(!commentId){
+    const error = new Error('commentId is missing');
+    error.statusCode = 400
+    console.log(error)
+    throw error
+  }
+
+  await likeRepository.likeComment(userId, commentId, postId);
 
 }
 
 module.exports = {
-  likePost, unlikePost, getLikes
+  likePost, unlikePost, getLikes, likeComment
 }

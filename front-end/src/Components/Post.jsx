@@ -51,6 +51,52 @@ const Post = () => {
     onSuccess: () => queryClient.invalidateQueries(['post', id]),
   });
 
+  const { mutate: handleCommentLikeToggle } = useMutation({
+    mutationKey: ['toggleCommentLike'],
+    mutationFn: async ({ commentId }) => {
+      // Single POST endpoint for both liking and unliking
+      return await axios.post(
+        `${apiUrl}/api/likes/comments/${commentId}`,
+        {postId: id},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+    },
+    onMutate: async ({ commentId, alreadyLiked }) => {
+      await queryClient.cancelQueries(['comments', id]);
+      const previousComments = queryClient.getQueryData(['comments', id]);
+
+      queryClient.setQueryData(['comments', id], (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page) => ({
+            ...page,
+            comments: page.comments.map((comment) => {
+              if (comment.id === commentId) {
+                return {
+                  ...comment,
+                  // Toggle the "red heart" state immediately
+                  liked_by_user: !alreadyLiked,
+                  // Increment or decrement the number immediately
+                  likes: alreadyLiked ? Math.max(0, comment.likes - 1) : comment.likes + 1,
+                };
+              }
+              return comment;
+            }),
+          })),
+        };
+      });
+
+      return { previousComments };
+    },
+    onError: (err, variables, context) => {
+      queryClient.setQueryData(['comments', id], context.previousComments);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries(['comments', id]);
+    },
+  });
+
   const fetchPost = async () => {
     const response = await axios.get(`${apiUrl}/api/posts/${id}`, {
       headers: {
@@ -168,22 +214,22 @@ const Post = () => {
     postComment({ postId, comment })
   }
 
-      const mutation = useMutation({
-        mutationFn: async(id)=>{
-                await axios.post(`${apiUrl}/api/follow/${id}`,{},{
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    }
-                })
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries(['user', id])
+  const mutation = useMutation({
+    mutationFn: async (id) => {
+      await axios.post(`${apiUrl}/api/follow/${id}`, {}, {
+        headers: {
+          Authorization: `Bearer ${token}`
         }
-    })
-
-    const handleFollow = (id) =>{
-        mutation.mutate(id)
+      })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['user', id])
     }
+  })
+
+  const handleFollow = (id) => {
+    mutation.mutate(id)
+  }
 
   if (isLoading) {
     return (<Spinner />)
@@ -216,7 +262,7 @@ const Post = () => {
             <img src={post.profile_picture} alt="" className="w-[32px] h-[32px] rounded-full" />
             <h2 onClick={() => navigate(`/profile/${post.user_id}`)} className="text-white font-semibold text-sm ml-4 hover:cursor-pointer">{post.username}</h2>
             <div className='h-[3px] w-[3px] bg-white mx-2' ></div>
-            {post?.is_following? null : <button  onClick={() => handleFollow(post.user_id)} className='text-blue-500 font-bold ml-2 hover:text-blue-300 hover:cursor-pointer'>Follow</button>}
+            {post?.is_following ? null : <button onClick={() => handleFollow(post.user_id)} className='text-blue-500 font-bold ml-2 hover:text-blue-300 hover:cursor-pointer'>Follow</button>}
             <div className={`flex flex-1 text-gray-400 text-xs ml-auto `}>
               <button onClick={() => setActivePostOptions({ postId: post.id, userId: post.user_id })} className='ml-auto'>
                 <BsThreeDots className="text-white w-5 h-5 cursor-pointer hover:text-gray-400" />
@@ -244,22 +290,48 @@ const Post = () => {
                   />
 
                   {/* Comment Content */}
-                  <div className="inline flex-col ">
+                  <div className="inline flex-col">
                     <p className="text-left text-white text-sm leading-snug">
-                      <span onClick={() => navigate(`/profile/${comment.user_id}`)} className="font-semibold inline-block mr-2 hover:cursor-pointer">{comment.username}</span>
+                      <span
+                        onClick={() => navigate(`/profile/${comment.user_id}`)}
+                        className="font-semibold inline-block mr-2 hover:cursor-pointer"
+                      >
+                        {comment.username}
+                      </span>
                       <span className="inline align-top">{comment.content}</span>
-
                     </p>
 
                     <div className="flex items-center text-zinc-500 text-xs mt-1">
                       {getCommentAge(comment.created_at)}
-                      <span className="ml-2">0 likes</span> {/* I NEED TO ADD A COMMENT LIKE_COUNT */}
-                      <span className="ml-2 hover:cursor-pointer hover:text-zinc-300">Reply</span> {/* ALSO A REPLY FUNCTION*/}
+
+                      <span className="ml-2 hover:cursor-pointer hover:text-zinc-300">
+                        {comment.likes} {comment.likes === 1 ? 'like' : 'likes'}
+                      </span>
+
+                      <span className="ml-2 hover:cursor-pointer hover:text-zinc-300">
+                        Reply
+                      </span>
                     </div>
                   </div>
-                  <CiHeart className="flex ml-auto text-white min-w-4 min-h-4 w-4 h-4 cursor-pointer hover:text-red-500" /> {/*ALSO NEED TO ADD LIKES FOR COMMENTS MY GODDDDDDD*/}
+
+                  {/* Dynamic Heart Icon */}
+                  <div className="ml-auto flex items-center">
+                    <CiHeart
+                      onClick={() => handleCommentLikeToggle({
+                        commentId: comment.id,
+                        alreadyLiked: comment.liked_by_user
+                      })}
+                      className={`min-w-4 min-h-4 w-4 h-4 cursor-pointer transition-all duration-200 ${comment.liked_by_user
+                          ? 'text-red-500 scale-110'
+                          : 'text-white hover:text-red-500'
+                        }`}
+                      // If your icon library supports it, use style to force fill color
+                      style={comment.liked_by_user ? { fill: 'currentColor', stroke: 'none' } : {}}
+                    />
+                  </div>
                 </div>
-              )))}
+              ))
+            )}
             <div
               ref={ref}
               className="h-10 flex items-center justify-center text-white mt-4"

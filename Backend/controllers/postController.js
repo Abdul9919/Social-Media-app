@@ -63,15 +63,18 @@ const getPosts = async (req, res) => {
       } else {
         const commentsResult = await pool.query(`
           SELECT 
-            comments.id, comments.user_id,comments.content, comments.created_at,
-            users.username, users.profile_picture
+            comments.id, comments.user_id,comments.content, comments.created_at, comments.likes,
+            users.username, users.profile_picture,
+            EXISTS (
+            SELECT 1 FROM comment_likes 
+            WHERE comment_likes.comment_id = comments.id AND comment_likes.user_id = $2
+        ) AS liked_by_user
           FROM comments
           JOIN users ON comments.user_id = users.id
           WHERE post_id = $1
           ORDER BY comments.created_at DESC
           LIMIT 5
-        `, [post.id]);
-
+        `, [post.id, userId]);
         comments = commentsResult.rows;
         await client.set(cacheKey, JSON.stringify(comments), { EX: 3600 });
       }
@@ -243,13 +246,17 @@ const getSinglePost = async (req, res) => {
       comments = JSON.parse(cachedComments);
     } else {
       const getPostComments = await pool.query(
-        `SELECT comments.id, comments.content, comments.created_at, users.username, users.profile_picture 
+        `SELECT comments.id, comments.content, comments.created_at, comments.likes, users.username, users.profile_picture, 
+        EXISTS (
+            SELECT 1 FROM comment_likes 
+            WHERE comment_likes.comment_id = comments.id AND comment_likes.user_id = $2
+        ) AS liked_by_user
          FROM comments 
          JOIN users ON comments.user_id = users.id 
          WHERE post_id = $1 
          ORDER BY created_at DESC 
          LIMIT 5`,
-        [postId]
+        [postId, userId]
       );
       comments = getPostComments.rows;
 
@@ -269,7 +276,7 @@ const getSinglePost = async (req, res) => {
   }
 };
 
-const getUserPosts = async (req,res) =>{
+const getUserPosts = async (req, res) => {
   try {
     const user = req.params.id;
     const userPosts = await postService.getUserPosts(user);

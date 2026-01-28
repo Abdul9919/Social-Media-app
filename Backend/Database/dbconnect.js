@@ -1,5 +1,7 @@
 const { Pool } = require('pg');
 const fs = require('fs')
+const {PrismaClient} = require('../generated/prisma/client.ts');
+const prisma = new PrismaClient(); 
 const pool = new Pool({
   user: process.env.DB_USER,
   host: process.env.DB_HOST,
@@ -29,9 +31,11 @@ const initDB = async () => {
   }
 }
 
+
+
 // Test connection and log result
 pool.query('SELECT NOW()')
   .then(() => console.log('Database connected successfully'))
   .catch(error => console.error('Database connection error:', error));
 
-module.exports = { pool, initDB };
+module.exports = { pool, initDB, prisma };
