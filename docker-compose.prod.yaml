@@ -40,7 +40,7 @@ services:
       FRONTEND_URL: http://141.145.159.42:5174
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      DATABASE_URL: postgresql://postgres:abdul12345@141.145.159.42:5432/socialMediaApp
+      DATABASE_URL: postgresql://postgres:abdul12345@database:5432/socialMediaApp
     ports:
       - 5001:5000
     develop:

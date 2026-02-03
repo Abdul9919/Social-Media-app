@@ -39,12 +39,30 @@ const loginUser = async (email, password, res) => {
         error.statusCode = 400
         throw error
     }
-    const checkUser = await userRepository.checkUser(email)
 
-    if (checkUser.rows.length === 0) {
+    const checkUser = await userRepository.checkUser(email);
+    const isMatch = await bcrypt.compare(password, checkUser.rows[0].password);
+
+     if (!isMatch) {
+        const error = new Error('Invalid password');
+        error.statusCode = 401
+        throw error
+    }
+
+    // const decryptedPass = await bcrypt.compare(password, checkUser.rows[0].password);
+
+    if (checkUser.rows.length === 0 || !isMatch) {
         const error = new Error('Invalid email or password');
         error.statusCode = 401
         throw error
+    }
+    
+    const user = {
+        id: checkUser.rows[0].id,
+        username: checkUser.rows[0].username,
+        email: checkUser.rows[0].email,
+        profile_picture: checkUser.rows[0].profile_picture,
+        notifCount: 1
     }
 
     const token = jwt.sign(
@@ -54,15 +72,12 @@ const loginUser = async (email, password, res) => {
     );
 
     const cacheKey = `user:${checkUser.rows[0].id}`;
-    const expireKey = 18600;
-    await client.set(cacheKey, JSON.stringify(checkUser.rows[0]), {
-        EX: expireKey  // Cache for 1 hour
-    });
+    await client.set(cacheKey, JSON.stringify(user));
 
     const loginUser = {
         id: checkUser.rows[0].id,
         username: checkUser.rows[0].username,
-        email: checkUser.rows[0].User,
+        email: checkUser.rows[0].email,
         profile_picture: checkUser.rows[0].profile_picture,
         token
     }
@@ -70,18 +85,19 @@ const loginUser = async (email, password, res) => {
 }
 
 const getCurrentUser = async (userId) => {
+
+        if (!userId) {
+        const error = new Error('Unauthorized');
+        error.statusCode = 401
+        throw error
+    }
+
     const cachedUser = await client.get(`user:${userId}`);
 
     let user;
 
     if (cachedUser) {
         return (user = (JSON.parse(cachedUser)));
-    }
-
-    if (!userId) {
-        const error = new Error('Unauthorized');
-        error.statusCode = 401
-        throw error
     }
 
     user = await userRepository.getUser(userId)
@@ -92,7 +108,13 @@ const getCurrentUser = async (userId) => {
         throw error
     }
 
-    await client.del(`user:${userId}`);
+    await client.set(`user:${userId}`, JSON.stringify({
+        id:user.rows[0].id,
+        username: user.rows[0].username,
+        email: user.rows[0].email,
+        profile_picture: user.rows[0].profile_picture,
+        notifCount: 1
+    }));
 
     return user.rows
 
@@ -102,6 +124,12 @@ const getUser = async (userId, currentUser) => {
     if (!userId) {
         const error = new Error('User id is required');
         error.statusCode = 400
+        throw error
+    }
+
+    if(currentUser !== userId) {
+        const error = new Error('Unauthorized');
+        error.statusCode = 401
         throw error
     }
 

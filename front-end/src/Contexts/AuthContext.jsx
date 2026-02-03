@@ -11,6 +11,7 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const apiUrl = import.meta.env.VITE_API_URL;
+    
 
     // Check if user is already logged in (token exists)
     const checkAuth = async () => {
@@ -20,13 +21,13 @@ export const AuthProvider = ({ children }) => {
                 const res = await axios.get(`${apiUrl}/api/users/me`, {
                     headers: { Authorization: `Bearer ${token}` },
                 });
-
-                const { id, username, email, profile_picture } = res.data;
+                const { id, username, email, profile_picture, notifCount } = res.data;
                 setUser({
                     id,
                     userName: username,
                     email,
                     profilePicture: profile_picture,
+                    notifCount,
                     token
                 });
                 setIsAuthenticated(true);
@@ -52,7 +53,8 @@ export const AuthProvider = ({ children }) => {
             userName: userData.username,
             email: userData.email,
             profilePicture: userData.profile_picture, // Ensure profilePicture is set
-            token
+            token,
+            notifCount: userData.notifCount // Add notifCount to user state
         });
         setIsAuthenticated(true);
     };

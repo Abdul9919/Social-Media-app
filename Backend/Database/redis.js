@@ -10,9 +10,9 @@ client.on('connect', () => {
   console.log('✅ Redis client connected successfully');
 });
 
-async function connectRedis() {
-await client.connect();
-    const pong = await client.ping();
+function connectRedis() {
+client.connect();
+    const pong = client.ping();
   console.log(`✅ Redis PING response: ${pong}`);
 }
 
