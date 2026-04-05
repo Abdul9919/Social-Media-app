@@ -6,9 +6,9 @@ COPY package*.json ./
 
 RUN npm install
 
-RUN npx prisma generate
-
 COPY . .
+
+RUN DATABASE_URL="postgresql://user:password@localhost:5432/db" npx prisma generate
 
 EXPOSE 5000
 

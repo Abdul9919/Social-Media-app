@@ -7,6 +7,7 @@ services:
     build: ./front-end
     environment:
       VITE_API_URL: http://141.145.159.42:5001
+      SOCKET_SERVER_URL: http://141.145.159.42:4999
     ports:
       - 5174:5173
     develop:
@@ -40,7 +41,7 @@ services:
       FRONTEND_URL: http://141.145.159.42:5174
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      DATABASE_URL: postgresql://postgres:abdul12345@141.145.159.42:5432/socialMediaApp
+      DATABASE_URL: postgresql://postgres:abdul12345@database:5432/socialMediaApp
     ports:
       - 5001:5000
     develop:
@@ -68,6 +69,27 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
+  socket-server:
+    build: ./socketServer
+    depends_on:
+      server:
+        condition: service_started
+    environment:
+      SERVER_PORT: 4999
+      REDIS_URL : 'redis://redis:6379'
+    ports:
+      - 4999:4999
+    develop:
+      watch:
+        - path: ./socketServer
+          target: /app
+          action: sync
+        - path: ./socketServer/package.json
+          action: rebuild
+        - path: ./socketServer/package-lock.json
+          action: rebuild
+
   redis:
     image: redis:7
     ports:

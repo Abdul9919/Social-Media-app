@@ -25,7 +25,8 @@ export const Login = () => {
           id: res.data.id,
           username: res.data.username,
           email: res.data.email,
-          profile_picture : res.data.profile_picture
+          profile_picture : res.data.profile_picture,
+          notifCount: res.data.notifCount
         });
         console.log('Login successful');
         navigate('/')
@@ -38,6 +39,7 @@ export const Login = () => {
 
     } catch (err) {
         setError(err.response.data.message || 'Invalid email or password');
+        setLoading(false);
     }
   }
   return (

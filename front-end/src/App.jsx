@@ -10,11 +10,13 @@ import { PostOptions } from './Components/PostOptions'
 import Spinner from './Components/Spinner'
 import lazyWithDelay from './Utils/lazyWithDelay'
 import { Profile } from './Components/Pages/Profile'
+import { SocketProvider } from './Contexts/SocketContext'
 const Post = lazyWithDelay(() => import('./Components/Post'), 300)
 
 function App() {
   return (
     <AuthProvider>
+      <SocketProvider>
         <Routes>
           <Route path="/" element={
             <PrivateRoute>
@@ -30,6 +32,7 @@ function App() {
           <Route path="/post/options/:id" element={<PrivateRoute><PostOptions /></PrivateRoute>} />
           <Route path='/profile/:id' element={<PrivateRoute><Suspense fallback={<Spinner />}><Profile/></Suspense></PrivateRoute>}/>
         </Routes>
+        </SocketProvider>
     </AuthProvider>
   )
 }

@@ -1,6 +1,6 @@
 const { Pool } = require('pg');
 const fs = require('fs')
-const {PrismaClient} = require('../generated/prisma/client.ts');
+const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient(); 
 const pool = new Pool({
   user: process.env.DB_USER,

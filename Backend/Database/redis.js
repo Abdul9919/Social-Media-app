@@ -1,7 +1,7 @@
 const {createClient} = require('redis');
 
 client = createClient({
-    url:'redis://redis:6379',
+    url:'redis://192.168.18.41:6379',
 })
 
 client.on('error', err => console.log('Redis Client Error', err));
@@ -11,7 +11,7 @@ client.on('connect', () => {
 });
 
 async function connectRedis() {
-await client.connect();
+client.connect();
     const pong = await client.ping();
   console.log(`✅ Redis PING response: ${pong}`);
 }
