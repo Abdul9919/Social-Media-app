@@ -39,9 +39,11 @@ const loginUser = async (email, password, res) => {
         error.statusCode = 400
         throw error
     }
-
+    // console.log(password)
     const checkUser = await userRepository.checkUser(email);
+    // console.log(checkUser.rows[0])
     const isMatch = await bcrypt.compare(password, checkUser.rows[0].password);
+    
 
      if (!isMatch) {
         const error = new Error('Invalid password');
@@ -79,6 +81,7 @@ const loginUser = async (email, password, res) => {
         username: checkUser.rows[0].username,
         email: checkUser.rows[0].email,
         profile_picture: checkUser.rows[0].profile_picture,
+        notifCount: 1,
         token
     }
     return loginUser

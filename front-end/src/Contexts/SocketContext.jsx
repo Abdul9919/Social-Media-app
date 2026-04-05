@@ -16,13 +16,14 @@ export const SocketProvider = ({ children }) => {
   const { user } = useContext(AuthContext);
   const socketRef = useRef(null);
   const [connected, setConnected] = useState(false);
+  const socketServerUrl = import.meta.env.SOCKET_SERVER_URL || "http://localhost:4999";
   
 
   useEffect(() => {
     if(!user?.id) return
     console.log("🔌 Establishing socket connection for user ID:", user.id);
     // Create socket connection ONLY once
-    socketRef.current = io("http://192.168.18.41:5001", {
+    socketRef.current = io(socketServerUrl, {
       withCredentials: true,
       autoConnect: true,
       transports: ["websocket"], // faster than polling
