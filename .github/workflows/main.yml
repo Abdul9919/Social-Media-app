@@ -22,4 +22,4 @@ jobs:
             cd /home/ubuntu/Social-Media-app/
             git fetch origin main
             git reset --hard origin/main
-            sudo docker compose -f docker-compose.prod.yaml up -d
+            sudo docker compose -f docker-compose.prod.yaml up --build -d
