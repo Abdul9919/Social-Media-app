@@ -7,7 +7,7 @@ services:
     build: ./front-end
     environment:
       VITE_API_URL: http://192.168.18.41:5000
-      SOCKET_SERVER_URL: http://192.168.18.41:4999
+      VITE_SOCKET_SERVER_URL: http://192.168.18.41:4999
     ports:
       - 5173:5173
     develop:

@@ -16,7 +16,8 @@ export const SocketProvider = ({ children }) => {
   const { user } = useContext(AuthContext);
   const socketRef = useRef(null);
   const [connected, setConnected] = useState(false);
-  const socketServerUrl = import.meta.env.SOCKET_SERVER_URL || "http://localhost:4999";
+  const socketServerUrl = import.meta.env.VITE_SOCKET_SERVER_URL;
+  console.log(socketServerUrl)
   
 
   useEffect(() => {
