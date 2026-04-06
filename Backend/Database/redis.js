@@ -1,7 +1,7 @@
 const {createClient} = require('redis');
 
 client = createClient({
-    url:'redis://192.168.18.41:6379',
+    url:`redis://${process.env.REDIS_HOST}:6379`,
 })
 
 client.on('error', err => console.log('Redis Client Error', err));
