@@ -42,6 +42,7 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       DATABASE_URL: postgresql://postgres:abdul12345@database:5432/socialMediaApp
+      RABBITMQ_URL: amqp://rabbitmq:5672
     ports:
       - 5000:5000
     develop:
@@ -96,6 +97,29 @@ services:
     volumes:
       - redis-data:/data
 
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    restart: always
+    ports:
+      # Standard AMQP protocol port
+      - "5672:5672"
+      # HTTP Management UI port
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    volumes:
+      # Ensures your queues and data persist if the container restarts
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - rabbit-network
+
+
+networks:
+  rabbit-network:
+    driver: bridge
+    
 volumes:
   db-data:
   redis-data:
+  rabbitmq_data:

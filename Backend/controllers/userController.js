@@ -1,5 +1,6 @@
 
 const userService = require('../services/userService.js')
+const {publishToQueue} = require('../queue/producer.js')
 
 
 const registerUser = async (req, res) => {
@@ -17,6 +18,7 @@ const loginUser = async (req, res) => {
     try {
         const { email, password } = req.body;
         const user = await userService.loginUser(email,password, res)
+        await publishToQueue('hello', { userId: user.id, action: 'login' });
         res.status(200).json(user);
     } catch (error) {
         console.error('Error logging in user:', error);

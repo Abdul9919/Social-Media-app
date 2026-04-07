@@ -9,7 +9,9 @@ const commentRoutes = require('./routes/commentRoutes.js')
 const likeRoutes = require('./routes/likeRoutes.js');
 const followRoutes = require('./routes/followRoute.js')
 const {connectRedis, client}= require('./Database/redis.js');
-const helmet = require('helmet')
+const helmet = require('helmet');
+const { connectQueue } = require('./queue/connection.js');
+const { startWorker } = require('./worker/worker.js');
 
 
 const app = express();
@@ -32,6 +34,14 @@ app.use(cors(
     credentials: true
   }
 ));
+
+
+connectQueue().then(() => {
+    console.log('RabbitMQ connection established');
+    startWorker('hello')
+
+})
+
  
 app.use('/api/likes', likeRoutes);
 app.use('/api/users', userRoutes);
