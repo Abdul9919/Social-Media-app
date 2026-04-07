@@ -7,6 +7,21 @@ const existingLike = async (postId, userId) => {
     return await existingLike.rows
 }
 
+const getPostOwner = async (postId) => {
+    const result = await pool.query('SELECT user_id FROM posts WHERE id = $1', [postId]);
+    return result.rows[0] ? result.rows[0].user_id : null;
+}
+
+const getCommentOwner = async (commentId) => {
+    const result = await pool.query('SELECT user_id FROM comments WHERE id = $1', [commentId]);
+    return result.rows[0] ? result.rows[0].user_id : null;
+}
+
+const getUsername = async (userId) => {
+    const result = await pool.query('SELECT username FROM users WHERE id = $1', [userId]);
+    return result.rows[0] ? result.rows[0].username : null;
+}
+
 const likePost = async (postId, userId) => {
     const like = await pool.query('INSERT INTO likes (post_id, user_id) VALUES ($1, $2)', [postId, userId]);
     await client.incr(`post:${postId}:like_count`);
@@ -47,6 +62,7 @@ const likeComment = async (userId, commentId, postId) => {
         comments = JSON.parse(commentsCache);
     }
 
+    const commentOwnerId = await getCommentOwner(commentId);
     const existing = await prisma.commentLike.findUnique({
         where: {
             userId_commentId: {  // compound key object
@@ -84,6 +100,11 @@ const likeComment = async (userId, commentId, postId) => {
             }
         })
         await client.set(commentKey, JSON.stringify(comments), { EX: 3600 });
+
+        return {
+            liked: true,
+            commentOwnerId,
+        };
     } else {
         console.log('existing executed')
         await prisma.commentLike.deleteMany({
@@ -113,6 +134,11 @@ const likeComment = async (userId, commentId, postId) => {
             
         })
         await client.set(commentKey, JSON.stringify(comments), { EX: 3600 });
+
+        return {
+            liked: false,
+            commentOwnerId,
+        };
     }
 }
 
@@ -121,5 +147,8 @@ module.exports = {
     likePost,
     unlikePost,
     getLikes,
-    likeComment
+    likeComment,
+    getPostOwner,
+    getCommentOwner,
+    getUsername
 }

@@ -1,4 +1,9 @@
 const likeRepository = require('../repositories/likeRepository');
+const { publishToQueue } = require('../queue/producer.js');
+
+const shouldPublishNotification = (recipientId, actorId) => {
+  return recipientId != null && actorId != null && recipientId !== actorId;
+};
 
 const likePost = async (userId, postId) => {
   if (!userId) {
@@ -14,7 +19,20 @@ const likePost = async (userId, postId) => {
     err.statusCode = 400;
     throw err;
   }
+
   const like = await likeRepository.likePost(postId, userId);
+  const postOwnerId = await likeRepository.getPostOwner(postId);
+
+  if (shouldPublishNotification(postOwnerId, userId)) {
+    const actorUsername = await likeRepository.getUsername(userId) || 'Someone';
+    await publishToQueue('notif-queue', {
+      userId: postOwnerId,
+      actorId: userId,
+      type: 'postLike',
+      message: `${actorUsername} has liked your post`,
+    });
+  }
+
   return like
 };
 
@@ -55,8 +73,18 @@ const likeComment = async (userId, commentId, postId) => {
     throw error
   }
 
-  await likeRepository.likeComment(userId, commentId, postId);
+  const result = await likeRepository.likeComment(userId, commentId, postId);
+  if (result.liked && shouldPublishNotification(result.commentOwnerId, userId)) {
+    const actorUsername = await likeRepository.getUsername(userId) || 'Someone';
+    await publishToQueue('notif-queue', {
+      userId: result.commentOwnerId,
+      actorId: userId,
+      type: 'commentLike',
+      message: `${actorUsername} has liked your comment`,
+    });
+  }
 
+  return result;
 }
 
 module.exports = {

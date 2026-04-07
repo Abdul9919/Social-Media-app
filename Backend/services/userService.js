@@ -64,7 +64,7 @@ const loginUser = async (email, password, res) => {
         username: checkUser.rows[0].username,
         email: checkUser.rows[0].email,
         profile_picture: checkUser.rows[0].profile_picture,
-        notifCount: 1
+        notifCount: checkUser.rows[0].notif_count
     }
 
     const token = jwt.sign(
@@ -75,15 +75,16 @@ const loginUser = async (email, password, res) => {
 
     const cacheKey = `user:${checkUser.rows[0].id}`;
     await client.set(cacheKey, JSON.stringify(user));
-
+    
     const loginUser = {
         id: checkUser.rows[0].id,
         username: checkUser.rows[0].username,
         email: checkUser.rows[0].email,
         profile_picture: checkUser.rows[0].profile_picture,
-        notifCount: 1,
+        notifCount: checkUser.rows[0].notif_count,
         token
     }
+    // console.log(loginUser)
     return loginUser
 }
 
@@ -116,7 +117,7 @@ const getCurrentUser = async (userId) => {
         username: user.rows[0].username,
         email: user.rows[0].email,
         profile_picture: user.rows[0].profile_picture,
-        notifCount: 1
+        notifCount: user.rows[0].notif_count
     }));
 
     return user.rows
