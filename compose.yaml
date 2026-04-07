@@ -41,8 +41,8 @@ services:
       FRONTEND_URL: http://192.168.18.41:5173
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      DATABASE_URL: postgresql://postgres:abdul12345@database:5432/socialMediaApp
       RABBITMQ_URL: amqp://rabbitmq:5672
+      DATABASE_URL: postgresql://postgres:abdul12345@database:5432/socialMediaApp
     ports:
       - 5000:5000
     develop:
