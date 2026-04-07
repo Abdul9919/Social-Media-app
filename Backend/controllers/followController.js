@@ -1,9 +1,10 @@
 const followService = require('../services/followService.js')
 
 const followUser = async (req,res) => {
+    console.log('follow user controller')
     const followerId = req.user.id;
     const followingId = req.params.id;
-
+    console.log('following', followingId)
     await followService.followUser(followerId, followingId)
     res.status(200).json({message: 'User followed successfully'})
 }

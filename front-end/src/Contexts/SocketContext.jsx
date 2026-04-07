@@ -17,12 +17,12 @@ export const SocketProvider = ({ children }) => {
   const socketRef = useRef(null);
   const [connected, setConnected] = useState(false);
   const socketServerUrl = import.meta.env.VITE_SOCKET_SERVER_URL;
-  console.log(socketServerUrl)
+  // console.log(socketServerUrl)
   
 
   useEffect(() => {
     if(!user?.id) return
-    console.log("🔌 Establishing socket connection for user ID:", user.id);
+    // console.log("🔌 Establishing socket connection for user ID:", user.id);
     // Create socket connection ONLY once
     socketRef.current = io(socketServerUrl, {
       withCredentials: true,

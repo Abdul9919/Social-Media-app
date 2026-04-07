@@ -7,7 +7,7 @@ import { CiSearch, CiHeart, CiSquarePlus } from 'react-icons/ci';
 const Navbar = () => {
   const navigate = useNavigate();
   const { user, logout } = useContext(AuthContext);
-  console.log(user)
+  // console.log(user)
 
   return (
     <div className="flex flex-col my-10 ml-4 gap-5 w-[14%] flex-shrink-0">

@@ -125,16 +125,16 @@ const getCurrentUser = async (userId) => {
 
 const getUser = async (userId, currentUser) => {
     if (!userId) {
-        const error = new Error('User id is required');
-        error.statusCode = 400
-        throw error
-    }
-
-    if(currentUser !== userId) {
         const error = new Error('Unauthorized');
         error.statusCode = 401
         throw error
     }
+
+    // if(currentUser !== userId) {
+    //     const error = new Error('Unauthorized');
+    //     error.statusCode = 401
+    //     throw error
+    // }
 
     const user = await userRepository.getUser(userId, currentUser)
 

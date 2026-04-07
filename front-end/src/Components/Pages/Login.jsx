@@ -28,7 +28,6 @@ export const Login = () => {
           profile_picture : res.data.profile_picture,
           notifCount: res.data.notifCount
         });
-        console.log('Login successful');
         navigate('/')
       } else {
         console.error('Invalid response format');
