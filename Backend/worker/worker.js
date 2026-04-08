@@ -1,5 +1,7 @@
 const { getChannel } = require('../queue/connection.js');
 const { prisma } = require('../Database/dbconnect.js');
+const {publisher} = require('../Database/redis.js');
+const {client} = require('../Database/redis.js');
 
 async function notifWorker(queueName) {
     const channel = getChannel();
@@ -65,7 +67,19 @@ async function notifWorker(queueName) {
                 return createdNotification;
             });
 
-            console.log('Notification created and notifCount updated:', notification);
+            await publisher.publish('notifications', JSON.stringify({
+                userId,
+                actorId,
+                type,
+                message
+            }));
+            const user = await client.get(`user:${userId}`);
+            if (user) {
+                const userData = JSON.parse(user);
+                userData.notifCount += 1;
+                await client.set(`user:${userId}`, JSON.stringify(userData));
+            }
+            console.log('Notification created and notifCount updated:');
             channel.ack(msg);
         } catch (err) {
             console.error('Worker Error while saving notification or updating notifCount:', err);

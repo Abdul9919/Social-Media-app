@@ -71,9 +71,9 @@ const likeComment = async (userId, commentId, postId) => {
             },
         },
     });
-    console.log(existing);
+    // console.log(existing);
     if (existing === null) {
-        console.log('not existing executed')
+        // console.log('not existing executed')
         await prisma.commentLike.create({
             data: {
                 userId: userId,
@@ -106,7 +106,7 @@ const likeComment = async (userId, commentId, postId) => {
             commentOwnerId,
         };
     } else {
-        console.log('existing executed')
+        // console.log('existing executed')
         await prisma.commentLike.deleteMany({
             where: {
                 userId: userId,

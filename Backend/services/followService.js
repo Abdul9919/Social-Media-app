@@ -1,6 +1,6 @@
 const followRepository = require('../repositories/followRepository.js')
 const followUser = async (followerId, followingId) => {
-    console.log(followerId, followingId)
+    // console.log(followerId, followingId)
     if(!followerId || !followingId) {
         const error = new Error('Missing Fields');
         error.statusCode = 400

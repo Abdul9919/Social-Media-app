@@ -24,6 +24,7 @@ const likePost = async (userId, postId) => {
   const postOwnerId = await likeRepository.getPostOwner(postId);
 
   if (shouldPublishNotification(postOwnerId, userId)) {
+    // console.log('hehehehe')
     const actorUsername = await likeRepository.getUsername(userId) || 'Someone';
     await publishToQueue('notif-queue', {
       userId: postOwnerId,
@@ -76,6 +77,7 @@ const likeComment = async (userId, commentId, postId) => {
   const result = await likeRepository.likeComment(userId, commentId, postId);
   if (result.liked && shouldPublishNotification(result.commentOwnerId, userId)) {
     const actorUsername = await likeRepository.getUsername(userId) || 'Someone';
+    // console.log('heheheh 2')
     await publishToQueue('notif-queue', {
       userId: result.commentOwnerId,
       actorId: userId,

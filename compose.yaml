@@ -63,6 +63,8 @@ services:
     environment:
       SERVER_PORT: 4999
       REDIS_URL : 'redis://redis:6379'
+      REDIS_HOST: 'redis'
+      REDIS_PORT: 6379
     ports:
       - 4999:4999
     develop:
