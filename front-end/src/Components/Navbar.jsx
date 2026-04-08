@@ -1,12 +1,14 @@
+
 import React, { useContext } from 'react'
 import { AuthContext } from '../Contexts/AuthContext';
 import { useNavigate } from 'react-router-dom'
 import { FaHome, FaFacebookMessenger, FaRegCompass } from 'react-icons/fa';
 import { CiSearch, CiHeart, CiSquarePlus } from 'react-icons/ci';
 
-const Navbar = () => {
+const Navbar = ({ onNotificationsClick }) => {
   const navigate = useNavigate();
   const { user, logout } = useContext(AuthContext);
+  // const [showNotifications, setShowNotifications] = useState(false);  
   // console.log(user)
 
   return (
@@ -38,7 +40,7 @@ const Navbar = () => {
       </div>
 
       {/* Notifications - DYNAMIC SECTION */}
-      <div className="flex gap-2 hover:opacity-70 hover:bg-zinc-800 hover:cursor-pointer transition duration-300 rounded-md p-2">
+      <div onClick={onNotificationsClick} className="flex gap-2 hover:opacity-70 hover:bg-zinc-800 hover:cursor-pointer transition duration-300 rounded-md p-2">
         <div className="relative">
           <CiHeart className="text-white text-3xl" />
           {/* Only show badge if count > 0 */}

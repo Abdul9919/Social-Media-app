@@ -17,6 +17,7 @@ export const SocketProvider = ({ children }) => {
   const socketRef = useRef(null);
   const [connected, setConnected] = useState(false);
   const socketServerUrl = import.meta.env.VITE_SOCKET_SERVER_URL;
+  const [notifications, setNotifications] = useState([]);
   // console.log(socketServerUrl)
 
 
@@ -40,9 +41,9 @@ export const SocketProvider = ({ children }) => {
       setConnected(true);
     });
 
-    socket.on('notification', () => {
+    socket.on('notification', (data) => {
       user.notifCount += 1;
-      
+      setNotifications(prev => [data, ...prev]);
     });
 
     socket.on("disconnect", () => {
@@ -57,7 +58,7 @@ export const SocketProvider = ({ children }) => {
   }, [user?.id]);
 
   return (
-    <SocketContext.Provider value={{ socket: socketRef.current, connected }}>
+    <SocketContext.Provider value={{ socket: socketRef.current, connected, notifications }}>
       {children}
     </SocketContext.Provider>
   );

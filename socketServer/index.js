@@ -41,7 +41,7 @@ subscriber.on('message', async (channel, message) => {
       const socketId = await client.hGet('online_users', userId.toString());
 
       if (socketId) {
-        io.to(socketId).emit('notification');
+        io.to(socketId).emit('notification', notification);
       } else {
         console.log(`User ${userId} is offline, notification saved to DB only`);
       }

@@ -12,6 +12,7 @@ import { PostOptions } from '../PostOptions';
 import { Likes } from '../Likes';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import  Navbar  from '../Navbar';
+import Notifications from '../Notifications';
 import {useNavigate} from 'react-router-dom'
 
 
@@ -24,6 +25,8 @@ const Home = () => {
   const navigate = useNavigate();
   const [activePostOptions, setActivePostOptions] = useState(null);
   const [activePostLikes, setActivePostLikes] = useState(null)
+  const [showNotifications, setShowNotifications] = useState(false);
+  // const [showNavbar, setShowNavbar] = useState(true)
   //const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   // const loaderRef = useRef();
@@ -243,16 +246,35 @@ const Home = () => {
 
   return (
     <>
-      <div className="relative bg-black w-screen h-screen flex overflow-hidden">
+      <div className="relative bg-black w-screen h-screen z-1000 flex overflow-hidden">
 
         {/* Sidebar */}
-        <Navbar/>
+        <Navbar onNotificationsClick={() => setShowNotifications(true)}/>
+
+        {/* Notifications Overlay */}
+        {showNotifications && (
+          <div className="fixed inset-0 z-100 flex">
+            <div 
+              className="fixed inset-0 bg-black bg-opacity-50"
+              onClick={() => setShowNotifications(false)}
+            />
+            <div className="absolute left-0 top-0 h-screen w-[50%] relative">
+              <button
+                onClick={() => setShowNotifications(false)}
+                className="absolute top-4 ml-[230px] z-1000 text-white text-2xl hover:opacity-70 cursor-pointer"
+              >
+                ✕
+              </button>
+              <Notifications />
+            </div>
+          </div>
+        )}
 
         {/* Divider */}
         <div className="w-px bg-zinc-800"></div>
 
         {/* Scrollable Feed */}
-        <div className="flex-1 overflow-y-auto h-screen px-6 py-8">
+        <div className={`flex-1 overflow-y-auto h-screen px-6 py-8 z-100 ${showNotifications ? 'ml-[20%]' : ''}`}>
           <div className="flex flex-col items-center gap-6">
             {data?.pages.flatMap((page) =>
               page.posts.map((post) => (
