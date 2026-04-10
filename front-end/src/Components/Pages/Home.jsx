@@ -48,15 +48,14 @@ const Home = () => {
       if (response.data.length < 3) {
         setHasMore(false);
       }
-      if (response.data.length > 0) {
-        return { posts: response.data, nextPage: response.data.length < 3 ? undefined : pageParam + 1 }
-      }
-
-      /*if (response.data.length > 0) {
-        setPosts(prev => [...prev, ...response.data]);
-      }*/
+      
+      return { 
+        posts: response.data, 
+        nextPage: response.data.length > 0 && response.data.length >= 3 ? pageParam + 1 : undefined 
+      };
     } catch (error) {
       console.error('Error fetching posts:', error);
+      return { posts: [], nextPage: undefined };
     }
   }
 

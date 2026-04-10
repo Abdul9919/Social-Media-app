@@ -29,6 +29,7 @@ const likePost = async (userId, postId) => {
     await publishToQueue('notif-queue', {
       userId: postOwnerId,
       actorId: userId,
+      postId: postId,
       type: 'postLike',
       message: `${actorUsername} has liked your post`,
     });

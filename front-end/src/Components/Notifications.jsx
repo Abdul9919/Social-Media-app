@@ -1,16 +1,42 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../Contexts/AuthContext";
 
-function Avatar({ initials }) {
+function Avatar({ profilePicture }) {
+  if (profilePicture) {
+    return (
+      <img
+        src={profilePicture}
+        alt="avatar"
+        className="w-11 h-11 rounded-full object-cover flex-shrink-0"
+      />
+    );
+  }
   return (
     <div className="w-11 h-11 rounded-full bg-neutral-800 flex items-center justify-center text-sm font-medium text-neutral-400 flex-shrink-0">
-      {initials}
+      U
     </div>
   );
 }
 
-function Thumbnail() {
+function Thumbnail({ mediaUrl, mediaType }) {
+  if (mediaUrl) {
+    if (mediaType?.includes('video')) {
+      return (
+        <div className="w-11 h-11 rounded bg-neutral-800 flex-shrink-0 flex items-center justify-center">
+          <span className="text-xs text-neutral-400">▶</span>
+        </div>
+      );
+    }
+    return (
+      <img
+        src={mediaUrl}
+        alt="post thumbnail"
+        className="w-11 h-11 rounded object-cover flex-shrink-0"
+      />
+    );
+  }
   return <div className="w-11 h-11 rounded bg-neutral-800 flex-shrink-0" />;
 }
 
@@ -31,26 +57,37 @@ function FollowButton() {
 }
 
 function NotificationItem({ notif }) {
+  const navigate = useNavigate();
   const text = notif.message || "You have a new notification";
   const type = notif.type;
-  const initials = notif.actorId ? String(notif.actorId).slice(-2) : "U";
   const createdAt = notif.createdAt ? new Date(notif.createdAt).toLocaleString() : "now";
   const isUnread = notif.isRead === false;
+  const actorProfilePicture = notif.actor?.profilePicture;
+  const postMediaUrl = notif.post?.mediaUrl;
+  const postMediaType = notif.post?.mediaType;
+  const postId = notif.post?.id;
+
+  const handleClick = () => {
+    if (type === "postLike" && postId) {
+      navigate(`/post/${postId}`);
+    }
+  };
 
   return (
     <div
+      onClick={handleClick}
       className={`flex items-center gap-3 my-2 px-4 py-3 rounded-lg cursor-pointer transition-colors ${
         isUnread ? 'bg-neutral-800/40 ' : 'hover:bg-neutral-900'
       }`}
     >
-      <Avatar initials={initials} />
+      <Avatar profilePicture={actorProfilePicture} />
       <div className="flex-1 min-w-0">
         <p className={`text-sm leading-snug ${isUnread ? 'text-white font-semibold' : 'text-white'}`}>
           {text}
         </p>
         <p className="text-xs text-neutral-500 mt-0.5">{createdAt}</p>
       </div>
-      {type === "follow" ? <FollowButton /> : <Thumbnail />}
+      {type === "follow" ? <FollowButton /> : <Thumbnail mediaUrl={postMediaUrl} mediaType={postMediaType} />}
     </div>
   );
 }

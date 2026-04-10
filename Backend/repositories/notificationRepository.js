@@ -4,6 +4,22 @@ const getUserNotifications = async (userId) => {
   return await prisma.notification.findMany({
     where: { userId },
     orderBy: { createdAt: 'desc' },
+    include: {
+      actor: {
+        select: {
+          id: true,
+          username: true,
+          profilePicture: true,
+        },
+      },
+      post: {
+        select: {
+          id: true,
+          mediaUrl: true,
+          mediaType: true,
+        },
+      },
+    },
   });
 };
 

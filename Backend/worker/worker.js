@@ -27,7 +27,7 @@ async function notifWorker(queueName) {
             return;
         }
 
-        const { userId, actorId, type, message } = content;
+        const { userId, actorId, type, message, postId } = content;
 
         if (userId == null) {
             console.error('Notification payload missing required field: userId');
@@ -53,6 +53,7 @@ async function notifWorker(queueName) {
                     data: {
                         userId,
                         actorId,
+                        postId: postId ? parseInt(postId, 10) : null,
                         type,
                         message: typeof message === 'string' ? message : '',
                         isRead: false,
