@@ -3,18 +3,22 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../Contexts/AuthContext";
 
-function Avatar({ profilePicture }) {
+function Avatar({ profilePicture, onClick }) {
   if (profilePicture) {
     return (
       <img
         src={profilePicture}
         alt="avatar"
-        className="w-11 h-11 rounded-full object-cover flex-shrink-0"
+        onClick={onClick}
+        className="w-11 h-11 rounded-full object-cover flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
       />
     );
   }
   return (
-    <div className="w-11 h-11 rounded-full bg-neutral-800 flex items-center justify-center text-sm font-medium text-neutral-400 flex-shrink-0">
+    <div
+      onClick={onClick}
+      className="w-11 h-11 rounded-full bg-neutral-800 flex items-center justify-center text-sm font-medium text-neutral-400 flex-shrink-0 cursor-pointer hover:bg-neutral-700 transition-colors"
+    >
       U
     </div>
   );
@@ -63,24 +67,32 @@ function NotificationItem({ notif }) {
   const createdAt = notif.createdAt ? new Date(notif.createdAt).toLocaleString() : "now";
   const isUnread = notif.isRead === false;
   const actorProfilePicture = notif.actor?.profilePicture;
+  const actorId = notif.actor?.id;
   const postMediaUrl = notif.post?.mediaUrl;
   const postMediaType = notif.post?.mediaType;
   const postId = notif.post?.id;
 
-  const handleClick = () => {
+  const handlePostClick = () => {
     if (type === "postLike" && postId) {
       navigate(`/post/${postId}`);
     }
   };
 
+  const handleAvatarClick = (e) => {
+    e.stopPropagation();
+    if (actorId) {
+      navigate(`/profile/${actorId}`);
+    }
+  };
+
   return (
     <div
-      onClick={handleClick}
+      onClick={handlePostClick}
       className={`flex items-center gap-3 my-2 px-4 py-3 rounded-lg cursor-pointer transition-colors ${
         isUnread ? 'bg-neutral-800/40 ' : 'hover:bg-neutral-900'
       }`}
     >
-      <Avatar profilePicture={actorProfilePicture} />
+      <Avatar profilePicture={actorProfilePicture} onClick={handleAvatarClick} />
       <div className="flex-1 min-w-0">
         <p className={`text-sm leading-snug ${isUnread ? 'text-white font-semibold' : 'text-white'}`}>
           {text}
