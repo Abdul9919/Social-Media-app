@@ -8,6 +8,7 @@ const postRoutes = require('./routes/postRoutes.js')
 const commentRoutes = require('./routes/commentRoutes.js')
 const likeRoutes = require('./routes/likeRoutes.js');
 const followRoutes = require('./routes/followRoute.js')
+const notificationRoutes = require('./routes/notificationRoutes.js');
 const {connectRedis, client}= require('./Database/redis.js');
 const helmet = require('helmet');
 const { connectQueue } = require('./queue/connection.js');
@@ -48,6 +49,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/follow', followRoutes)
+app.use('/api/notifications', notificationRoutes);
 
 initDB()
   .then(() => {
