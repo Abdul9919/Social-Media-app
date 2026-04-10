@@ -7,6 +7,16 @@ const getUserNotifications = async (userId) => {
   });
 };
 
+const getUnreadNotificationCount = async (userId) => {
+  return await prisma.notification.count({
+    where: {
+      userId,
+      isRead: false,
+    },
+  });
+};
+
 module.exports = {
   getUserNotifications,
-};
+  getUnreadNotificationCount,
+}
