@@ -113,14 +113,7 @@ services:
     volumes:
       # Ensures your queues and data persist if the container restarts
       - rabbitmq_data:/var/lib/rabbitmq
-    networks:
-      - rabbit-network
 
-
-networks:
-  rabbit-network:
-    driver: bridge
-    
 volumes:
   db-data:
   redis-data:
