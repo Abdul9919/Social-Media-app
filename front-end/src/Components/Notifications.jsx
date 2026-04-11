@@ -45,19 +45,52 @@ function Thumbnail({ mediaUrl, mediaType }) {
   return <div className="w-11 h-11 rounded bg-neutral-800 flex-shrink-0" />;
 }
 
-function FollowButton() {
-  const [following, setFollowing] = useState(true);
+function FollowButton({ actorId, initialFollowing }) {
+  const [following, setFollowing] = useState(initialFollowing);
+  const [loading, setLoading] = useState(false);
+  const apiUrl = import.meta.env.VITE_API_URL;
+
+  useEffect(() => {
+    setFollowing(initialFollowing);
+  }, [initialFollowing]);
+
+  const handleToggleFollow = async () => {
+    const token = localStorage.getItem('token');
+    if (!actorId || !token) return;
+    setLoading(true);
+
+    try {
+      if (following) {
+        await axios.delete(`${apiUrl}/api/follow/${actorId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      } else {
+        await axios.post(`${apiUrl}/api/follow/${actorId}`, {}, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      }
+      setFollowing((prev) => !prev);
+    } catch (err) {
+      console.error('Unable to update follow status:', err.response?.data?.message || err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <button
-      onClick={() => setFollowing(!following)}
+    <>
+    {following &&<button
+      onClick={handleToggleFollow}
+      disabled={loading}
       className={`text-sm font-semibold px-4 py-1.5 rounded-lg flex-shrink-0 transition-colors ${
         following
           ? "bg-neutral-700 text-white hover:bg-neutral-600"
           : "bg-blue-500 text-white hover:bg-blue-600"
-      }`}
+      } ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
     >
-      {following ? "Following" : "Follow"}
-    </button>
+      {following ? "Following" : null}
+    </button>}
+    </>
   );
 }
 
@@ -69,6 +102,7 @@ function NotificationItem({ notif }) {
   const isUnread = notif.isRead === false;
   const actorProfilePicture = notif.actor?.profilePicture;
   const actorId = notif.actor?.id;
+  const actorIsFollowing = notif.actor?.isFollowingActor;
   const postMediaUrl = notif.post?.mediaUrl;
   const postMediaType = notif.post?.mediaType;
   const postId = notif.post?.id;
@@ -100,7 +134,7 @@ function NotificationItem({ notif }) {
         </p>
         <p className="text-xs text-neutral-500 mt-0.5">{createdAt}</p>
       </div>
-      {type === "follow" ? <FollowButton /> : <Thumbnail mediaUrl={postMediaUrl} mediaType={postMediaType} />}
+      {type === "follow" ? <FollowButton actorId={actorId} initialFollowing={actorIsFollowing} /> : <Thumbnail mediaUrl={postMediaUrl} mediaType={postMediaType} />}
     </div>
   );
 }

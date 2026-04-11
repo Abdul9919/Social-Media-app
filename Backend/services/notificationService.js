@@ -7,8 +7,20 @@ const getUserNotifications = async (userId) => {
     throw error;
   }
 
-  const notifications = await notificationRepository.getUserNotifications(userId);
-  return notifications;
+  const notifications = await notificationRepository.getUserNotifications(userId, userId);
+  return notifications.map((notification) => {
+    const actor = notification.actor ? {
+      id: notification.actor.id,
+      username: notification.actor.username,
+      profilePicture: notification.actor.profilePicture,
+      isFollowingActor: (notification.actor.followers?.length || 0) > 0,
+    } : null;
+
+    return {
+      ...notification,
+      actor,
+    };
+  });
 };
 
 const getUnreadNotificationCount = async (userId) => {

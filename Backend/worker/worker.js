@@ -53,7 +53,7 @@ async function notifWorker(queueName) {
             const notification = await prisma.$transaction(async (tx) => {
                 const createdNotification = await tx.notification.create({
                     data: {
-                        userId,
+                        userId: parseInt(userId, 10),
                         actorId,
                         postId: postId ? parseInt(postId, 10) : null,
                         type,
@@ -63,7 +63,7 @@ async function notifWorker(queueName) {
                 });
 
                 await tx.user.update({
-                    where: { id: userId },
+                    where: { id: parseInt(userId, 10) },
                     data: { notifCount: { increment: 1 } },
                 });
 

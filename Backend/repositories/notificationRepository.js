@@ -1,6 +1,6 @@
 const { prisma } = require('../Database/dbconnect.js');
 
-const getUserNotifications = async (userId) => {
+const getUserNotifications = async (userId, currentUserId) => {
   return await prisma.notification.findMany({
     where: { userId },
     orderBy: { createdAt: 'desc' },
@@ -10,6 +10,10 @@ const getUserNotifications = async (userId) => {
           id: true,
           username: true,
           profilePicture: true,
+          followers: {
+            where: { followedBy: currentUserId },
+            select: { followedBy: true },
+          },
         },
       },
       post: {
