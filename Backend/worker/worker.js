@@ -2,6 +2,8 @@ const { getChannel } = require('../queue/connection.js');
 const { prisma } = require('../Database/dbconnect.js');
 const {publisher} = require('../Database/redis.js');
 const {client} = require('../Database/redis.js');
+const postRepository = require('../repositories/postRepository.js');
+const userRepository = require('../repositories/userRepository.js');
 
 async function notifWorker(queueName) {
     const channel = getChannel();
@@ -67,11 +69,14 @@ async function notifWorker(queueName) {
 
                 return createdNotification;
             });
-
+            const postDetails = await postRepository.getPostIdMediaTypeUrl(parseInt(postId, 10));
+            const userDetails = await userRepository.getUserPfpIdName(parseInt(actorId, 10));
             await publisher.publish('notifications', JSON.stringify({
+                post: postDetails,
+                actor: userDetails,
                 userId,
-                actorId,
                 type,
+                is_read: false,
                 message
             }));
             const user = await client.get(`user:${userId}`);

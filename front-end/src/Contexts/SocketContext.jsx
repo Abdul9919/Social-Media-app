@@ -13,7 +13,7 @@ export const useSocket = () => {
 
 export const SocketProvider = ({ children }) => {
 
-  const { user } = useContext(AuthContext);
+  const { user, setUser } = useContext(AuthContext);
   const socketRef = useRef(null);
   const [connected, setConnected] = useState(false);
   const socketServerUrl = import.meta.env.VITE_SOCKET_SERVER_URL;
@@ -42,7 +42,8 @@ export const SocketProvider = ({ children }) => {
     });
 
     socket.on('notification', (data) => {
-      user.notifCount += 1;
+      console.log('Notification received:', data);
+      setUser(prev => prev ? { ...prev, notifCount: (prev.notifCount || 0) + 1 } : prev);
       setNotifications(prev => [data, ...prev]);
     });
 

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../Contexts/AuthContext";
+import { useSocket } from "../Contexts/SocketContext";
 
 function Avatar({ profilePicture, onClick }) {
   if (profilePicture) {
@@ -106,7 +107,8 @@ function NotificationItem({ notif }) {
 
 export default function Notifications() {
   const { user } = useAuth();
-  const [notifications, setNotifications] = useState([]);
+  const { notifications: socketNotifications } = useSocket();
+  const [fetchedNotifications, setFetchedNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const apiUrl = import.meta.env.VITE_API_URL;
@@ -123,7 +125,7 @@ export default function Notifications() {
         const response = await axios.get(`${apiUrl}/api/notifications/`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        setNotifications(response.data);
+        setFetchedNotifications(response.data);
       } catch (err) {
         setError(err.response?.data?.message || err.message || 'Unable to load notifications');
       } finally {
@@ -134,6 +136,14 @@ export default function Notifications() {
     fetchNotifications();
   }, [user?.id]);
 
+  // Combine fetched and socket notifications, avoiding duplicates
+  const allNotifications = (() => {
+    const notificationMap = new Map();
+    fetchedNotifications.forEach(n => notificationMap.set(n.id, n));
+    socketNotifications.forEach(n => notificationMap.set(n.id, n));
+    return Array.from(notificationMap.values()).sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+  })();
+
   return (
     <div className="max-w-sm bg-black min-h-screen text-white">
       <h1 className="text-xl font-semibold px-4 pt-4 pb-3">Notifications</h1>
@@ -142,10 +152,10 @@ export default function Notifications() {
           <p className="text-neutral-500 py-4">Loading notifications...</p>
         ) : error ? (
           <p className="text-red-500 py-4">{error}</p>
-        ) : notifications.length === 0 ? (
+        ) : allNotifications.length === 0 ? (
           <p className="text-neutral-500 py-4">No notifications yet</p>
         ) : (
-          notifications.map((notif) => (
+          allNotifications.map((notif) => (
             <NotificationItem key={notif.id} notif={notif} />
           ))
         )}

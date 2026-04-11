@@ -37,7 +37,7 @@ subscriber.subscribe('notifications', (err) => {
 subscriber.on('message', async (channel, message) => {
     if (channel === 'notifications') {
       const notification = JSON.parse(message);
-      const { userId } = notification;
+      const { userId } = notification; 
       const socketId = await client.hGet('online_users', userId.toString());
 
       if (socketId) {

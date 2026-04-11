@@ -1,4 +1,4 @@
-const { pool } = require('../Database/dbconnect.js');
+const { pool, prisma } = require('../Database/dbconnect.js');
 
 
 const getUserPosts = async (user) => {
@@ -36,7 +36,7 @@ ORDER BY p.created_at DESC;
     return posts.rows
 }
 
-const getPostComments = async (postId) =>{
+const getPostComments = async (postId) => {
     const comments = await pool.query(`SELECT comments.id, comments.content, comments.user_id,comments.created_at, users.username, users.profile_picture FROM comments JOIN users on comments.user_id = users.id WHERE post_id = $1 ORDER BY comments.created_at DESC LIMIT 5`, [postId]);
     return comments.rows
 }
@@ -46,8 +46,21 @@ const getLikeCount = async (postId) => {
     return likeCount.rows[0].like_count
 }
 
+const getPostIdMediaTypeUrl = async (postId) => {
+    if (!postId) return null;
+    return await prisma.post.findUnique({
+        where: { id: postId },
+        select: {
+            id: true,
+            mediaType: true,
+            mediaUrl: true,
+        },
+    });
+};
+
 module.exports = {
     getUserPosts,
     getPostComments,
-    getLikeCount
-}
+    getLikeCount,
+    getPostIdMediaTypeUrl
+};
