@@ -106,7 +106,7 @@ function NotificationItem({ notif }) {
 }
 
 export default function Notifications() {
-  const { user } = useAuth();
+  const { user, setUser } = useAuth();
   const { notifications: socketNotifications } = useSocket();
   const [fetchedNotifications, setFetchedNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -115,6 +115,21 @@ export default function Notifications() {
 
   useEffect(() => {
     if (!user?.id) return;
+
+    const markAllNotificationsRead = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await axios.patch(`${apiUrl}/api/notifications/read-all`, {}, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if(res.status === 204) {
+          allNotifications.forEach(n => n.isRead = true);
+        }
+        setUser((prevUser) => (prevUser ? { ...prevUser, notifCount: 0 } : prevUser));
+      } catch (err) {
+        console.error('Unable to mark notifications read:', err.response?.data?.message || err.message);
+      }
+    };
 
     const fetchNotifications = async () => {
       setLoading(true);
@@ -133,6 +148,7 @@ export default function Notifications() {
       }
     };
 
+    markAllNotificationsRead();
     fetchNotifications();
   }, [user?.id]);
 

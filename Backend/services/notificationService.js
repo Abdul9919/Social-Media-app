@@ -21,7 +21,18 @@ const getUnreadNotificationCount = async (userId) => {
   return await notificationRepository.getUnreadNotificationCount(userId);
 };
 
+const markNotificationsRead = async (userId) => {
+  if (!userId) {
+    const error = new Error('Invalid user id');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  return await notificationRepository.markNotificationsRead(userId);
+};
+
 module.exports = {
   getUserNotifications,
-  getUnreadNotificationCount
-}
+  getUnreadNotificationCount,
+  markNotificationsRead,
+};

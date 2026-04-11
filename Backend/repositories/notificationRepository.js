@@ -32,7 +32,26 @@ const getUnreadNotificationCount = async (userId) => {
   });
 };
 
+const markNotificationsRead = async (userId) => {
+  return await prisma.$transaction([
+    prisma.notification.updateMany({
+      where: {
+        userId,
+        isRead: false,
+      },
+      data: {
+        isRead: true,
+      },
+    }),
+    prisma.user.update({
+      where: { id: userId },
+      data: { notifCount: 0 },
+    }),
+  ]);
+};
+
 module.exports = {
   getUserNotifications,
   getUnreadNotificationCount,
-}
+  markNotificationsRead,
+};
