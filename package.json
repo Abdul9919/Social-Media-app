@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "amqplib": "^1.0.3",
     "react-intersection-observer": "^9.16.0"
   }
 }

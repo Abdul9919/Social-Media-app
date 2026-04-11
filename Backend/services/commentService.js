@@ -1,5 +1,7 @@
 const commentRepository = require('../repositories/commentRepository.js')
 const { client } = require('../Database/redis.js');
+const { publishToQueue } = require('../queue/producer.js');
+const likeRepository = require('../repositories/likeRepository.js');
 
 const getComments = async (userId, postId, page) => {
 
@@ -67,6 +69,19 @@ const createComment = async (userId, postId, content) => {
         // Set updated array
         await client.set(cacheKey, JSON.stringify(trimmed), { EX: 3600 });
     }
+
+    const postOwnerId = await commentRepository.getPostOwner(postId);
+    if (postOwnerId && postOwnerId !== userId) {
+      const actorUsername = await likeRepository.getUsername(userId) || 'Someone';
+      await publishToQueue('notif-queue', {
+        userId: postOwnerId,
+        actorId: userId,
+        postId: postId,
+        type: 'comment',
+        message: `${actorUsername} commented on your post`,
+      });
+    }
+
     return comment
 
 }

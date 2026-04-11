@@ -1,4 +1,5 @@
 const userRepository = require('../repositories/userRepository.js')
+const notificationService = require('./notificationService.js');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { client } = require('../Database/redis.js');
@@ -41,30 +42,28 @@ const loginUser = async (email, password, res) => {
     }
     // console.log(password)
     const checkUser = await userRepository.checkUser(email);
-    // console.log(checkUser.rows[0])
-    const isMatch = await bcrypt.compare(password, checkUser.rows[0].password);
-    
 
-     if (!isMatch) {
-        const error = new Error('Invalid password');
-        error.statusCode = 401
-        throw error
-    }
-
-    // const decryptedPass = await bcrypt.compare(password, checkUser.rows[0].password);
-
-    if (checkUser.rows.length === 0 || !isMatch) {
+    if (checkUser.rows.length === 0) {
         const error = new Error('Invalid email or password');
-        error.statusCode = 401
-        throw error
+        error.statusCode = 401;
+        throw error;
+    }
+
+    const isMatch = await bcrypt.compare(password, checkUser.rows[0].password);
+
+    if (!isMatch) {
+        const error = new Error('Invalid email or password');
+        error.statusCode = 401;
+        throw error;
     }
     
+    const unreadCount = await notificationService.getUnreadNotificationCount(checkUser.rows[0].id);
     const user = {
         id: checkUser.rows[0].id,
         username: checkUser.rows[0].username,
         email: checkUser.rows[0].email,
         profile_picture: checkUser.rows[0].profile_picture,
-        notifCount: 1
+        notifCount: unreadCount
     }
 
     const token = jwt.sign(
@@ -75,51 +74,52 @@ const loginUser = async (email, password, res) => {
 
     const cacheKey = `user:${checkUser.rows[0].id}`;
     await client.set(cacheKey, JSON.stringify(user));
-
+    
     const loginUser = {
         id: checkUser.rows[0].id,
         username: checkUser.rows[0].username,
         email: checkUser.rows[0].email,
         profile_picture: checkUser.rows[0].profile_picture,
-        notifCount: 1,
+        notifCount: unreadCount,
         token
-    }
-    return loginUser
-}
+    };
+
+    return loginUser;
+};
 
 const getCurrentUser = async (userId) => {
-
-        if (!userId) {
+    if (!userId) {
         const error = new Error('Unauthorized');
-        error.statusCode = 401
-        throw error
+        error.statusCode = 401;
+        throw error;
     }
 
     const cachedUser = await client.get(`user:${userId}`);
 
-    let user;
-
     if (cachedUser) {
-        return (user = (JSON.parse(cachedUser)));
+        return JSON.parse(cachedUser);
     }
 
-    user = await userRepository.getUser(userId)
+    const user = await userRepository.getUser(userId);
 
     if (user.rows.length === 0) {
         const error = new Error('User does not exist');
-        error.statusCode = 404
-        throw error
+        error.statusCode = 404;
+        throw error;
     }
 
-    await client.set(`user:${userId}`, JSON.stringify({
-        id:user.rows[0].id,
+    const unreadCount = await notificationService.getUnreadNotificationCount(userId);
+    const userData = {
+        id: user.rows[0].id,
         username: user.rows[0].username,
         email: user.rows[0].email,
         profile_picture: user.rows[0].profile_picture,
-        notifCount: 1
-    }));
+        notifCount: unreadCount
+    };
 
-    return user.rows
+    await client.set(`user:${userId}`, JSON.stringify(userData));
+
+    return userData;
 
 }
 

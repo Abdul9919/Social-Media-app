@@ -1,4 +1,4 @@
-const { pool } = require('../Database/dbconnect.js');
+const { pool, prisma } = require('../Database/dbconnect.js');
 
 const existingEmail = async (email) => {
     const existingEmail = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
@@ -10,7 +10,7 @@ const existingUsername = async (username) => {
     return existingUsername
 }
 
-const createUser = async (newUser) =>{
+const createUser = async (newUser) => {
     const createdUser = await pool.query('INSERT INTO users (username, email, password) VALUES ($1, $2, $3) RETURNING *', [newUser.username, newUser.email, newUser.password]);
     return await createdUser
 }
@@ -26,7 +26,7 @@ const getCurrentUser = async (userId) => {
     return await user
 }
 
-const changeUserInfo = async (userId,username,email,password) => {
+const changeUserInfo = async (userId, username, email, password) => {
     const user = await pool.query('UPDATE users SET username= $1 password= $2 email= $3 WHERE id = $4 RETURNING *', [username, password, email, userId])
     return await user
 }
@@ -43,6 +43,18 @@ const getUser = async (userId, currentUser) => {
     return await user
 }
 
+const getUserPfpIdName = async (userId) => {
+    return await prisma.user.findUnique({
+        where: { id: userId },
+            select: {
+                    id: true,
+                    username: true,
+                    profilePicture: true,
+                },
+    },
+    );
+}
+
 module.exports = {
     existingEmail,
     existingUsername,
@@ -51,5 +63,6 @@ module.exports = {
     getCurrentUser,
     changeUserInfo,
     uploadProfilePicture,
-    getUser
+    getUser,
+    getUserPfpIdName
 }

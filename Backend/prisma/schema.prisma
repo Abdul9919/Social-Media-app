@@ -16,11 +16,14 @@ model User {
   createdAt      DateTime?     @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt      DateTime?     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   profilePicture String?       @default("https://res.cloudinary.com/dv9af2izq/image/upload/v1751620689/default-profile-picture_jirerm.jpg") @map("profile_picture") @db.VarChar(255)
+  notifCount     Int           @default(0) @map("notif_count")
   
   comments       Comment[]
   commentLikes   CommentLike[] // Added this
   likes          Like[]
   posts          Post[]
+  notifications  Notification[] @relation("NotificationRecipient")
+  triggeredNotifications Notification[] @relation("NotificationActor")
   
   // Fixed Follower relations
   following      Follower[]    @relation("followers_followed_by")
@@ -41,6 +44,7 @@ model Post {
   commentsCount Int?      @default(0) @map("comments")
   commentsRel   Comment[]
   likesRel      Like[]
+  notifications Notification[]
   user          User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([userId])
@@ -94,6 +98,26 @@ model Follower {
   @@id([followedBy, following]) // Added this to make the table valid
   @@index([following, followedBy], map: "followers_user_id")
   @@map("followers")
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  actorId   Int      @map("actor_id")
+  postId    Int?     @map("post_id")
+  type      String   @db.VarChar(50)
+  message   String   @db.VarChar(255)
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+
+  user      User     @relation("NotificationRecipient", fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  actor     User     @relation("NotificationActor", fields: [actorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  post      Post?    @relation(fields: [postId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([userId])
+  @@index([actorId])
+  @@index([postId])
+  @@map("notifications")
 }
 
 model CommentLike {

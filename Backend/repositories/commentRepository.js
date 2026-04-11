@@ -48,8 +48,14 @@ const createComment = async (content, userId, postId) => {
     return result.rows[0]
 }
 
+const getPostOwner = async (postId) => {
+    const result = await pool.query('SELECT user_id FROM posts WHERE id = $1', [postId]);
+    return result.rows[0] ? result.rows[0].user_id : null;
+};
+
 module.exports = {
     getCommentCount,
     getPostComments,
-    createComment
+    createComment,
+    getPostOwner
 }

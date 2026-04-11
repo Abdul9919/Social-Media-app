@@ -2,6 +2,7 @@ const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const { client, connectRedis } = require('./redis/redis.js');
+const { subscriber } = require('./redis/redis.js');
 
 const app = express();
 (async () => {
@@ -28,6 +29,24 @@ io.on("connection", async (socket) => {
     console.log(`User disconnected: ${socket.id}`);
   }); 
 });
+
+subscriber.subscribe('notifications', (err) => {
+    if (err) console.error('Redis subscribe error:', err);
+  });
+
+subscriber.on('message', async (channel, message) => {
+    if (channel === 'notifications') {
+      const notification = JSON.parse(message);
+      const { userId } = notification; 
+      const socketId = await client.hGet('online_users', userId.toString());
+
+      if (socketId) {
+        io.to(socketId).emit('notification', notification);
+      } else {
+        console.log(`User ${userId} is offline, notification saved to DB only`);
+      }
+    }
+  });
 
 server.listen(4999, "0.0.0.0",() => {
     console.log("Socket.IO server running on port 4999");

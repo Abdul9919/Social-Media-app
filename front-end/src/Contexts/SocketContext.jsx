@@ -12,23 +12,24 @@ export const useSocket = () => {
 };
 
 export const SocketProvider = ({ children }) => {
-  
-  const { user } = useContext(AuthContext);
+
+  const { user, setUser } = useContext(AuthContext);
   const socketRef = useRef(null);
   const [connected, setConnected] = useState(false);
   const socketServerUrl = import.meta.env.VITE_SOCKET_SERVER_URL;
+  const [notifications, setNotifications] = useState([]);
   // console.log(socketServerUrl)
-  
+
 
   useEffect(() => {
-    if(!user?.id) return
+    if (!user?.id) return
     // console.log("🔌 Establishing socket connection for user ID:", user.id);
     // Create socket connection ONLY once
     socketRef.current = io(socketServerUrl, {
       withCredentials: true,
       autoConnect: true,
       transports: ["websocket"], // faster than polling
-      auth:{
+      auth: {
         userId: user.id
       }
     });
@@ -38,6 +39,12 @@ export const SocketProvider = ({ children }) => {
     socket.on("connect", () => {
       console.log("🟢 Socket connected:", socket.id);
       setConnected(true);
+    });
+
+    socket.on('notification', (data) => {
+      console.log('Notification received:', data);
+      setUser(prev => prev ? { ...prev, notifCount: (prev.notifCount || 0) + 1 } : prev);
+      setNotifications(prev => [data, ...prev]);
     });
 
     socket.on("disconnect", () => {
@@ -52,7 +59,7 @@ export const SocketProvider = ({ children }) => {
   }, [user?.id]);
 
   return (
-    <SocketContext.Provider value={{ socket: socketRef.current, connected }}>
+    <SocketContext.Provider value={{ socket: socketRef.current, connected, notifications }}>
       {children}
     </SocketContext.Provider>
   );
