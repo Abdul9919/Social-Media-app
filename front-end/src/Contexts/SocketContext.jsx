@@ -42,9 +42,14 @@ export const SocketProvider = ({ children }) => {
     });
 
     socket.on('notification', (data) => {
-      console.log('Notification received:', data);
-      setUser(prev => prev ? { ...prev, notifCount: (prev.notifCount || 0) + 1 } : prev);
+      // console.log('Notification received:', data);
+      setUser((prevUser) => {
+        const user = { ...prevUser };
+        user.notifCount = (user.notifCount || 0) + 1;
+        return user;
+      });
       setNotifications(prev => [data, ...prev]);
+      // console.log(user)
     });
 
     socket.on("disconnect", () => {

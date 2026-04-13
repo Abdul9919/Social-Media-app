@@ -39,9 +39,9 @@ subscriber.on('message', async (channel, message) => {
       const notification = JSON.parse(message);
       const { userId } = notification; 
       const socketId = await client.hGet('online_users', userId.toString());
-
       if (socketId) {
         io.to(socketId).emit('notification', notification);
+        console.log('notif sent')
       } else {
         console.log(`User ${userId} is offline, notification saved to DB only`);
       }

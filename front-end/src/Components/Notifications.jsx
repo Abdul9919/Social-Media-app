@@ -156,10 +156,10 @@ export default function Notifications() {
         const res = await axios.patch(`${apiUrl}/api/notifications/read-all`, {}, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        if(res.status === 204) {
-          allNotifications.forEach(n => n.isRead = true);
+        if (res.status === 204) {
+          setFetchedNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+          setUser((prevUser) => (prevUser ? { ...prevUser, notifCount: 0 } : prevUser));
         }
-        setUser((prevUser) => (prevUser ? { ...prevUser, notifCount: 0 } : prevUser));
       } catch (err) {
         console.error('Unable to mark notifications read:', err.response?.data?.message || err.message);
       }

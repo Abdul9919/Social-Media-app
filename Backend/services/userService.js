@@ -63,7 +63,6 @@ const loginUser = async (email, password, res) => {
         username: checkUser.rows[0].username,
         email: checkUser.rows[0].email,
         profile_picture: checkUser.rows[0].profile_picture,
-        notifCount: unreadCount
     }
 
     const token = jwt.sign(
@@ -73,7 +72,7 @@ const loginUser = async (email, password, res) => {
     );
 
     const cacheKey = `user:${checkUser.rows[0].id}`;
-    await client.set(cacheKey, JSON.stringify(user));
+    await client.set(cacheKey, JSON.stringify(user), 'EX', 3600);
     
     const loginUser = {
         id: checkUser.rows[0].id,
