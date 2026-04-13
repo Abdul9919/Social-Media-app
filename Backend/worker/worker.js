@@ -1,7 +1,7 @@
 const { getChannel } = require('../queue/connection.js');
 const { prisma } = require('../Database/dbconnect.js');
 const {publisher} = require('../Database/redis.js');
-const {client} = require('../Database/redis.js');
+// const {client} = require('../Database/redis.js');
 const postRepository = require('../repositories/postRepository.js');
 const userRepository = require('../repositories/userRepository.js');
 
@@ -79,12 +79,6 @@ async function notifWorker(queueName) {
                 is_read: false,
                 message
             }));
-            const user = await client.get(`user:${userId}`);
-            if (user) {
-                const userData = JSON.parse(user);
-                userData.notifCount += 1;
-                await client.set(`user:${userId}`, JSON.stringify(userData));
-            }
             console.log('Notification created and notifCount updated:');
             channel.ack(msg);
         } catch (err) {

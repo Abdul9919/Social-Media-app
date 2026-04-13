@@ -250,25 +250,6 @@ const Home = () => {
         {/* Sidebar */}
         <Navbar onNotificationsClick={() => setShowNotifications(true)}/>
 
-        {/* Notifications Overlay */}
-        {showNotifications && (
-          <div className="fixed inset-0 z-100 flex">
-            <div 
-              className="fixed inset-0 bg-black bg-opacity-50"
-              onClick={() => setShowNotifications(false)}
-            />
-            <div className="absolute left-0 top-0 h-screen w-[50%] relative">
-              <button
-                onClick={() => setShowNotifications(false)}
-                className="absolute top-4 ml-[230px] z-1000 text-white text-2xl hover:opacity-70 cursor-pointer"
-              >
-                ✕
-              </button>
-              <Notifications />
-            </div>
-          </div>
-        )}
-
         {/* Divider */}
         <div className="w-px bg-zinc-800"></div>
 

@@ -27,7 +27,7 @@ export const AuthProvider = ({ children }) => {
                     userName: username,
                     email,
                     profilePicture: profile_picture,
-                    notifCount,
+                    notifCount: Number(notifCount) || 0,
                     token
                 });
                 setIsAuthenticated(true);
@@ -55,7 +55,7 @@ export const AuthProvider = ({ children }) => {
             email: userData.email,
             profilePicture: userData.profile_picture, // Ensure profilePicture is set
             token,
-            notifCount: userData.notifCount // Add notifCount to user state
+            notifCount: Number(userData.notifCount) || 0,
         });
         setIsAuthenticated(true);
     };

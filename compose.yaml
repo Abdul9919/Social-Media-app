@@ -26,6 +26,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
+      rabbitmq:
+        condition: service_started
     build: ./Backend
     environment:
       SERVER_PORT: 5000
