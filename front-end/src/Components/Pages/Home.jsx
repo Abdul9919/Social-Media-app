@@ -327,7 +327,9 @@ const Home = () => {
         </div>
       </div>
       {activePostOptions && (
-        <PostOptions activePostOptions={activePostOptions} setActivePostOptions={setActivePostOptions} />
+        <div onClick={() => setActivePostOptions(null)} className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-1000">
+          <PostOptions activePostOptions={activePostOptions} setActivePostOptions={setActivePostOptions} />
+        </div>
       )}
       {activePostLikes && (
         <Likes activePostLikes={activePostLikes} setActivePostLikes={setActivePostLikes} />

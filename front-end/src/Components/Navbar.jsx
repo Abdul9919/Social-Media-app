@@ -1,10 +1,11 @@
 
-import React, { useContext, useState, useEffect } from 'react'
+import React, { useContext, useState } from 'react'
 import { AuthContext } from '../Contexts/AuthContext';
 import { useNavigate } from 'react-router-dom'
 import { FaHome, FaFacebookMessenger, FaRegCompass } from 'react-icons/fa';
 import { CiSearch, CiHeart, CiSquarePlus } from 'react-icons/ci';
 import Notifications from './Notifications';
+import CreatePost from './CreatePost';
 import { IoClose } from 'react-icons/io5'
 // import { useSocket } from '../Contexts/SocketContext';
 
@@ -13,6 +14,7 @@ const Navbar = () => {
   const navigate = useNavigate();
   const { user, logout } = useContext(AuthContext);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showCreate, setShowCreate] = useState(false);
   // console.log(user)
 
   
@@ -61,7 +63,7 @@ const Navbar = () => {
         </div>
 
         {/* Create */}
-        <div className="flex gap-2 hover:opacity-70 hover:bg-zinc-800 hover:cursor-pointer transition duration-300 rounded-md p-2">
+        <div onClick={() => setShowCreate(true)} className="flex gap-2 hover:opacity-70 hover:bg-zinc-800 hover:cursor-pointer transition duration-300 rounded-md p-2">
           <CiSquarePlus className="text-white text-3xl" />
           <h2 className="text-white text-lg font-bold">Create</h2>
         </div>
@@ -84,10 +86,17 @@ const Navbar = () => {
               onClick={() => setShowNotifications(false)}
               className='absolute top-4 right-4 text-white hover:text-gray-400 transition'
             >
-              <IoClose className='w-6 h-6 cursor-pointer' />
+              <div className='w-10 h-10  ml-4'>
+              <IoClose className='w-6 h-6 cursor-pointer fixed ' />
+              </div>
             </button>
             <Notifications onClose={() => setShowNotifications(false)} />
           </div>
+        </div>
+      }
+      {showCreate &&
+        <div className='fixed inset-0 z-1000 bg-black/60 backdrop-blur-sm flex items-center justify-center'>
+          <CreatePost onClose={() => setShowCreate(false)} />
         </div>
       }
     </>

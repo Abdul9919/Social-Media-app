@@ -196,8 +196,8 @@ export default function Notifications() {
 
   return (
     <div className="max-w-sm bg-black min-h-screen text-white">
-      <h1 className="text-xl font-semibold px-4 pt-4 pb-3">Notifications</h1>
-      <div className="flex flex-col px-4 pb-4">
+      <h1 className=" text-xl font-semibold px-4 pt-4 pb-3 ">Notifications</h1>
+      <div className="flex flex-col px-4 pb-4 my-6">
         {loading ? (
           <p className="text-neutral-500 py-4">Loading notifications...</p>
         ) : error ? (

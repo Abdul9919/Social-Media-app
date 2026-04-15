@@ -12,10 +12,11 @@ import { useInView } from "react-intersection-observer";
 import Spinner from './Spinner.jsx'
 import { PostOptions } from './PostOptions.jsx';
 import { Likes } from './Likes.jsx';
+import { useContext } from 'react';
 
 const Post = () => {
   const { id } = useParams();
-
+  const { user } = useContext(AuthContext);
   const navigate = useNavigate();
   const token = localStorage.getItem('token');
   const apiUrl = import.meta.env.VITE_API_URL;
@@ -262,7 +263,7 @@ const Post = () => {
             <img src={post.profile_picture} alt="" className="w-[32px] h-[32px] rounded-full" />
             <h2 onClick={() => navigate(`/profile/${post.user_id}`)} className="text-white font-semibold text-sm ml-4 hover:cursor-pointer">{post.username}</h2>
             <div className='h-[3px] w-[3px] bg-white mx-2' ></div>
-            {post?.is_following ? null : <button onClick={() => handleFollow(post.user_id)} className='text-blue-500 font-bold ml-2 hover:text-blue-300 hover:cursor-pointer'>Follow</button>}
+            {post?.is_following && post.user_id === user.id ? null : <button onClick={() => handleFollow(post.user_id)} className='text-blue-500 font-bold ml-2 hover:text-blue-300 hover:cursor-pointer'>Follow</button>}
             <div className={`flex flex-1 text-gray-400 text-xs ml-auto `}>
               <button onClick={() => setActivePostOptions({ postId: post.id, userId: post.user_id })} className='ml-auto'>
                 <BsThreeDots className="text-white w-5 h-5 cursor-pointer hover:text-gray-400" />
