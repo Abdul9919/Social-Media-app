@@ -1,6 +1,7 @@
 import React, { Suspense } from 'react'
 import './App.css'
 const Home = lazyWithDelay(() => import('./Components/Pages/Home'), 300)
+import CreatePost from './Components/CreatePost'
 import { Login } from './Components/Pages/Login'
 import { Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './Contexts/AuthContext'
@@ -29,6 +30,7 @@ function App() {
 
           <Route path="/post/:id" element={<PrivateRoute><Suspense fallback={<Spinner />}><Post /></Suspense> </PrivateRoute>} />
           <Route path="/notifications" element={<PrivateRoute><Notifications /></PrivateRoute>} />
+          <Route path="/create" element={<PrivateRoute><CreatePost onClose={() => window.history.back()} /></PrivateRoute>} />
           <Route path="/spinner" element={<Spinner />} />
           <Route path="/post/options/:id" element={<PrivateRoute><PostOptions /></PrivateRoute>} />
           <Route path='/profile/:id' element={<PrivateRoute><Suspense fallback={<Spinner />}><Profile/></Suspense></PrivateRoute>}/>

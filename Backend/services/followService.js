@@ -9,6 +9,12 @@ const followUser = async (followerId, followingId) => {
         throw error
     }
 
+    if(followerId === followingId) {
+        const error = new Error('You cannot follow yourself');
+        error.statusCode = 400
+        throw error
+    }
+
     const result = await followRepository.addFollower(followerId, followingId)
 
     const actorUsername = await likeRepository.getUsername(followerId) || 'Someone';

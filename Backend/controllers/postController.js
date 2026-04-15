@@ -173,7 +173,9 @@ const createPost = async (req, res) => {
     const userId = req.user.id;
     const { description } = req.body;
     const file = req.file;
-
+    // console.log('Received file:', file);
+    // console.log(userId);
+    // console.log(description)
     if (!userId) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
