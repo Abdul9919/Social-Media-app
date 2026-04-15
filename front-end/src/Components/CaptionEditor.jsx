@@ -1,7 +1,7 @@
 import { useContext } from "react";
 import { AuthContext } from "../Contexts/AuthContext";
 
-export default function CaptionEditor({ src, userName, caption, setCaption }) {
+export default function CaptionEditor({ src, userName, caption, setCaption, fileType }) {
   const { user } = useContext(AuthContext);
   const MAX_CAPTION_CHARS = 2200;
 
@@ -9,11 +9,19 @@ export default function CaptionEditor({ src, userName, caption, setCaption }) {
     <div className="flex h-[480px] w-full">
       {/* Left: Final Image with Tag Overlay */}
       <div className="flex-1 bg-black flex items-center justify-center overflow-hidden relative border-r border-[#363636]">
-        <img
-          src={src}
-          alt="Final Edit"
-          className="max-w-full max-h-full object-contain"
-        />
+        {fileType === "image" ? (
+          <img
+            src={src}
+            alt="Final Edit"
+            className="max-w-full max-h-full object-contain"
+          />
+        ) : (
+          <video
+            src={src}
+            controls
+            className="max-w-full max-h-full object-contain"
+          />
+        )}
         <span className="absolute top-[15%] left-1/2 -translate-x-1/2 text-white/90 text-[11px] font-medium tracking-wide">
           Click photo to tag people
         </span>

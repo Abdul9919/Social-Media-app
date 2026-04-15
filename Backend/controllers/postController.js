@@ -153,9 +153,14 @@ const deletePost = async (req, res) => {
     // 3. Extract Cloudinary public_id from media_url
     const publicIdMatch = post.media_url.match(/\/v\d+\/(.+)\.(jpg|png|jpeg|mp4|webm|mov|avi)$/);
     const publicId = publicIdMatch ? publicIdMatch[1] : null;
-
-    if (publicId) {
-      await cloudinary.uploader.destroy(publicId);
+    console.log(publicId)
+    if (publicId && postResult.rows[0].media_type === 'image') {
+      const result = await cloudinary.uploader.destroy(publicId);
+      console.log(result)
+    }
+    if (publicId && postResult.rows[0].media_type === 'video') {
+      const result = await cloudinary.uploader.destroy(publicId, { resource_type: 'video' });
+      console.log(result)
     }
 
     // 4. Delete the post from DB
@@ -191,15 +196,28 @@ const createPost = async (req, res) => {
       overwrite: false,
       resource_type: 'auto'
     });
+    if(result.error) {
+      console.log(result.error);
+      return res.status(500).json({ message: 'Error uploading media' });
+    }
+    let media_type;
+    if(file.mimetype === 'video/mp4' || file.mimetype === 'video/webm' || file.mimetype === 'video/avi' || file.mimetype === 'video/mov'){
+      media_type = 'video';
+    }
+    else{
+      media_type = 'image';
+    }
+    // console.log(result)
     await fs.unlink(file.path);
     const newPost = await pool.query(
       'INSERT INTO posts (description, media_url, media_type, user_id) VALUES ($1, $2, $3, $4) RETURNING *',
-      [description, result.secure_url, result.resource_type, userId]
+      [description, result.secure_url, media_type, userId]
     );
     await client.set(`post:${newPost.rows[0].id}:like_count`, 0);
 
     res.status(201).json(newPost.rows[0]);
   } catch (error) {
+    console.log(error.message)
     res.status(500).json({ message: error.message })
   }
 }
