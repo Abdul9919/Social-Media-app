@@ -56,7 +56,7 @@ const loginUser = async (email, password, res) => {
         error.statusCode = 401;
         throw error;
     }
-    
+
     const unreadCount = await notificationService.getUnreadNotificationCount(checkUser.rows[0].id);
     const user = {
         id: checkUser.rows[0].id,
@@ -73,7 +73,7 @@ const loginUser = async (email, password, res) => {
 
     const cacheKey = `user:${checkUser.rows[0].id}`;
     await client.set(cacheKey, JSON.stringify(user), 'EX', 3600);
-    
+
     const loginUser = {
         id: checkUser.rows[0].id,
         username: checkUser.rows[0].username,
@@ -179,7 +179,7 @@ const changeUserInfo = async (userId, username, email, password, res) => {
 
 }
 
-const uploadProfilePicture = async (userId, file,res ) => {
+const uploadProfilePicture = async (userId, file, res) => {
 
     if (!userId) {
         const error = new Error('Unauthorized');
@@ -199,11 +199,15 @@ const uploadProfilePicture = async (userId, file,res ) => {
         error.statusCode = 400
         throw error
     }
+    // This is faster and more reliable than searching
+    await cloudinary.uploader.destroy(`profile_pictures/${userId}`);
     const result = await cloudinary.uploader.upload(file.path, {
         folder: 'profile_pictures',
         public_id: userId,
         overwrite: true
     });
+    const cacheKey = `user:${userId}`;
+    await client.del(cacheKey);
 
     await fs.unlink(file.path);
 
