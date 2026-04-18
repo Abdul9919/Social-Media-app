@@ -38,7 +38,7 @@ const uploadProfilePicture = async (result, userId) => {
 
 const getUser = async (userId, currentUser) => {
     const user = await pool.query(
-        'SELECT users.id, users.username, users.profile_picture, EXISTS(SELECT 1 from followers WHERE following=$1 AND followed_by=$2) AS is_following,(SELECT COUNT(*) FROM followers WHERE following=users.id) AS follower_count, (SELECT COUNT(*) FROM followers WHERE followed_by=users.id) AS following_count, (SELECT COUNT(*) FROM posts WHERE user_id=users.id) AS post_count FROM users WHERE id = $1'
+        'SELECT users.id, users.username, users.profile_picture, users.bio, EXISTS(SELECT 1 from followers WHERE following=$1 AND followed_by=$2) AS is_following,(SELECT COUNT(*) FROM followers WHERE following=users.id) AS follower_count, (SELECT COUNT(*) FROM followers WHERE followed_by=users.id) AS following_count, (SELECT COUNT(*) FROM posts WHERE user_id=users.id) AS post_count FROM users WHERE id = $1'
         , [userId, currentUser])
     return await user
 }
@@ -55,6 +55,15 @@ const getUserPfpIdName = async (userId) => {
     );
 }
 
+const changeUserNameAndBio = async (userId, username, bio) => {
+    try {
+        const user = await pool.query('UPDATE users SET username = $1, bio = $2 WHERE id = $3 RETURNING *', [username, bio, userId])
+        return await user
+    } catch (error) {
+        console.log(error)
+    }
+}
+
 module.exports = {
     existingEmail,
     existingUsername,
@@ -64,5 +73,6 @@ module.exports = {
     changeUserInfo,
     uploadProfilePicture,
     getUser,
-    getUserPfpIdName
+    getUserPfpIdName,
+    changeUserNameAndBio
 }

@@ -63,6 +63,7 @@ const loginUser = async (email, password, res) => {
         username: checkUser.rows[0].username,
         email: checkUser.rows[0].email,
         profile_picture: checkUser.rows[0].profile_picture,
+        bio: checkUser.rows[0].bio,
     }
 
     const token = jwt.sign(
@@ -72,7 +73,7 @@ const loginUser = async (email, password, res) => {
     );
 
     const cacheKey = `user:${checkUser.rows[0].id}`;
-    await client.set(cacheKey, JSON.stringify(user), 'EX', 3600);
+    await client.set(cacheKey, JSON.stringify(user), 'EX', 60*60);
 
     const loginUser = {
         id: checkUser.rows[0].id,
@@ -80,6 +81,7 @@ const loginUser = async (email, password, res) => {
         email: checkUser.rows[0].email,
         profile_picture: checkUser.rows[0].profile_picture,
         notifCount: unreadCount,
+        bio: checkUser.rows[0].bio,
         token
     };
 
@@ -113,7 +115,8 @@ const getCurrentUser = async (userId) => {
         username: user.rows[0].username,
         email: user.rows[0].email,
         profile_picture: user.rows[0].profile_picture,
-        notifCount: unreadCount
+        notifCount: unreadCount,
+        bio: user.rows[0].bio
     };
 
     await client.set(`user:${userId}`, JSON.stringify(userData));
@@ -214,11 +217,33 @@ const uploadProfilePicture = async (userId, file, res) => {
     return await userRepository.uploadProfilePicture(result.secure_url, userId)
 }
 
+const changeUserNameAndBio = async (userId, username, bio) => {
+    if (!userId) {
+        const error = new Error('Unauthorized');
+        error.statusCode = 401
+        throw error
+    }
+    const user = await userRepository.changeUserNameAndBio(userId, username, bio);
+    const cacheKey = `user:${userId}`;
+    let userCache;
+    if(cacheKey){
+        userCache = await client.get(cacheKey);
+        userCache = JSON.parse(userCache);
+        userCache.username = username;
+        userCache.bio = bio;
+        // console.log(userCache)
+        await client.set(cacheKey, JSON.stringify(userCache), 'EX', 60*60);
+    }
+
+    return user
+}
+
 module.exports = {
     registerUser,
     loginUser,
     getCurrentUser,
     changeUserInfo,
     uploadProfilePicture,
-    getUser
+    getUser,
+    changeUserNameAndBio
 }

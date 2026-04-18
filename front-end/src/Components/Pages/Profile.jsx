@@ -8,6 +8,7 @@ import Spinner from '../Spinner.jsx'
 import { FaHeart, FaComment } from "react-icons/fa";
 import { useNavigate, useParams } from 'react-router-dom'
 import EditProfile from '../EditProfile.jsx'
+import SuccessToast from '../SuccessToast.jsx';
 
 export const Profile = () => {
     const { id } = useParams()
@@ -17,6 +18,7 @@ export const Profile = () => {
     const navigate = useNavigate()
     const queryClient = useQueryClient();
     const [isEditing, setIsEditing] = React.useState(false)
+    const [successToast, setSuccessToast] = React.useState(false)
 
     const fetchUser = async () => {
         try {
@@ -98,7 +100,11 @@ export const Profile = () => {
                 <Navbar />
                 <div className="w-px bg-zinc-800"></div>
                 <div className="w-full h-full mr-[13%] ml-[13%] px-[20px] pt-[35px]">
+                    {successToast &&
+                        <SuccessToast />}
+
                     <div className='flex ml-[5%] mr-[5%]'>
+
                         <div className='w-[270px] h-[175px]'>
                             <img
                                 src={userProfile?.profile_picture || '/default-profile.jpg'}
@@ -116,6 +122,9 @@ export const Profile = () => {
                                 <span className='text-zinc-400'><span className='font-bold text-white'>{userProfile?.post_count}</span> posts</span>
                                 <span className='text-zinc-400'><span className='font-bold text-white'>{userProfile?.follower_count}</span> followers</span>
                                 <span className='text-zinc-400'><span className='font-bold text-white'>{userProfile?.following_count}</span> following</span>
+                            </div>
+                            <div className='my-4 max-w-[500px]'>
+                                <span>{userProfile?.bio}</span>
                             </div>
                         </div>
                     </div>
@@ -156,7 +165,7 @@ export const Profile = () => {
             </div>
             {isEditing &&
                 <div className='fixed inset-0 bg-black/50 flex items-center justify-center z-1000'>
-                    <EditProfile setIsEditing={setIsEditing}/>
+                    <EditProfile setIsEditing={setIsEditing} setSuccessToast={setSuccessToast} />
                 </div>}
         </>
     )

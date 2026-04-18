@@ -25,6 +25,8 @@ const io = new Server(server, {
 io.on("connection", async (socket) => {
   await client.hSet('online_users', socket.handshake.auth.userId.toString(), socket.id);
   socket.on("disconnect", async () => {
+    const cacheKey = `user:${socket.handshake.auth.userId}`;
+    await client.del(cacheKey);
     await client.hDel('online_users', socket.handshake.auth.userId.toString());
     console.log(`User disconnected: ${socket.id}`);
   }); 

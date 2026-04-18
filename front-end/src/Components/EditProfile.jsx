@@ -3,16 +3,16 @@ import { User, Camera } from 'lucide-react';
 import { AuthContext } from '../Contexts/AuthContext.jsx';
 import ConfirmPhotoChange from './ConfirmPhotoChange.jsx';
 
-const EditProfile = ({ setIsEditing }) => {
-    const [username, setUsername] = useState('janedoe');
+const EditProfile = ({ setIsEditing, setSuccessToast }) => {
     const { user } = React.useContext(AuthContext);
-    const [bio, setBio] = useState('Product designer & coffee enthusiast. Building things at the intersection of code and craft.');
+    const [username, setUserName] = useState(user?.userName || '');
+    const [bio, setBio] = useState(user.bio || '');
     const fileInputRef = useRef(null);
     const [profileImage, setProfileImage] = useState(user?.profilePicture);
     const apiUrl = import.meta.env.VITE_API_URL
     const [confirmation, setConfirmation] = useState(false)
     const [successMessage, setSuccessMessage] = useState('');
-
+    // console.log(user)
     const handleImageClick = () => {
         // 3. Trigger the hidden input when the div is clicked
         fileInputRef.current.click();
@@ -59,6 +59,28 @@ const EditProfile = ({ setIsEditing }) => {
             setProfileImage(imageUrl);
         }
     };
+
+    const handleSaveChanges = async () => {
+        try {
+            const response = await fetch(`${apiUrl}/api/users/username-bio`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify({ username, bio })
+            });
+
+            if (response.ok) {
+                setSuccessToast(true);
+                setTimeout(() => setSuccessToast(false), 3000);
+                setIsEditing(false);
+            }
+        } catch (error) {
+            console.log(error)
+            alert('Failed to save changes. Please try again later.')
+        }
+    }
 
     return (
         <>
@@ -129,7 +151,7 @@ const EditProfile = ({ setIsEditing }) => {
                             <input
                                 type="text"
                                 value={username}
-                                onChange={(e) => setUsername(e.target.value.slice(0, 30))}
+                                onChange={(e) => setUserName(e.target.value.slice(0, 30))}
                                 className="w-full bg-[#121212] border border-gray-800 rounded-lg px-4 py-3 text-gray-100 focus:outline-none focus:ring-1 focus:ring-gray-600 transition-all"
                             />
                             <div className="text-right text-xs text-gray-500 mt-1">
@@ -156,7 +178,7 @@ const EditProfile = ({ setIsEditing }) => {
                             <button onClick={() => setIsEditing(false)} className="cursor-pointer flex-1 px-4 py-2.5 rounded-lg border border-gray-800 text-gray-300 font-medium hover:bg-gray-800 transition-colors">
                                 Cancel
                             </button>
-                            <button className="cursor-pointer flex-1 px-4 py-2.5 rounded-lg border border-gray-800 text-gray-100 font-medium hover:bg-gray-800 transition-colors">
+                            <button onClick={handleSaveChanges} className="cursor-pointer flex-1 px-4 py-2.5 rounded-lg border border-gray-800 text-gray-100 font-medium hover:bg-gray-800 transition-colors">
                                 Save changes
                             </button>
                         </div>

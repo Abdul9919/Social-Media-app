@@ -76,4 +76,16 @@ const getUser = async (req, res) => {
     }
 }
 
-module.exports = { registerUser, loginUser, getCurrentUser, changeUserInfo, uploadProfilePicture, getUser };
+const changeUserNameAndBio = async (req, res) => {
+    const userId = req.user.id;
+    const { username, bio } = req.body;
+    try {
+        const user = await userService.changeUserNameAndBio(userId, username, bio)
+        res.status(200).json({message : 'User info updated successfully'})
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message : 'Internal server error' });
+    }
+}
+
+module.exports = { registerUser, loginUser, getCurrentUser, changeUserInfo, uploadProfilePicture, getUser, changeUserNameAndBio };
