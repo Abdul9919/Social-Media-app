@@ -53,7 +53,8 @@ const changeUserInfo = async (req, res) => {
 const uploadProfilePicture = async (req, res) => {
     const userId = req.user.id;
     const file = req.file;
-
+    // console.log(file)
+    // console.log(userId)
     try{
         const user = await userService.uploadProfilePicture(userId, file, res)
         res.status(200).json({message: 'Profile Picture uploaded successfully'})
