@@ -9,23 +9,23 @@ datasource db {
 }
 
 model User {
-  id             Int           @id @default(autoincrement())
-  username       String        @unique @db.VarChar(50)
-  email          String        @unique @db.VarChar(255)
-  password       String        @db.VarChar(255)
-  createdAt      DateTime?     @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt      DateTime?     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  profilePicture String?       @default("https://res.cloudinary.com/dv9af2izq/image/upload/v1751620689/default-profile-picture_jirerm.jpg") @map("profile_picture") @db.VarChar(255)
-  notifCount     Int           @default(0) @map("notif_count")
+  id             Int            @id @default(autoincrement())
+  username       String         @unique @db.VarChar(50)
+  email          String         @unique @db.VarChar(255)
+  password       String         @db.VarChar(255)
+  bio            String?        @db.VarChar(500) // Added this field
+  createdAt      DateTime?      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime?      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  profilePicture String?        @default("https://res.cloudinary.com/dv9af2izq/image/upload/v1751620689/default-profile-picture_jirerm.jpg") @map("profile_picture") @db.VarChar(255)
+  notifCount     Int            @default(0) @map("notif_count")
   
   comments       Comment[]
-  commentLikes   CommentLike[] // Added this
+  commentLikes   CommentLike[] 
   likes          Like[]
   posts          Post[]
   notifications  Notification[] @relation("NotificationRecipient")
   triggeredNotifications Notification[] @relation("NotificationActor")
   
-  // Fixed Follower relations
   following      Follower[]    @relation("followers_followed_by")
   followers      Follower[]    @relation("followers_following")
 

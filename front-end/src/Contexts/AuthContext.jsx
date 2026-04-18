@@ -21,13 +21,14 @@ export const AuthProvider = ({ children }) => {
                 const res = await axios.get(`${apiUrl}/api/users/me`, {
                     headers: { Authorization: `Bearer ${token}` },
                 });
-                const { id, username, email, profile_picture, notifCount } = res.data;
+                const { id, username, email, profile_picture, notifCount, bio } = res.data;
                 setUser({
                     id,
                     userName: username,
                     email,
                     profilePicture: profile_picture,
                     notifCount: Number(notifCount) || 0,
+                    bio: bio,
                     token
                 });
                 setIsAuthenticated(true);
@@ -56,6 +57,7 @@ export const AuthProvider = ({ children }) => {
             profilePicture: userData.profile_picture, // Ensure profilePicture is set
             token,
             notifCount: Number(userData.notifCount) || 0,
+            bio: userData.bio || ''
         });
         setIsAuthenticated(true);
     };

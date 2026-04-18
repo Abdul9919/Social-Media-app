@@ -26,7 +26,8 @@ export const Login = () => {
           username: res.data.username,
           email: res.data.email,
           profile_picture : res.data.profile_picture,
-          notifCount: res.data.notifCount
+          notifCount: res.data.notifCount,
+          bio: res.data.bio
         });
         navigate('/')
       } else {
