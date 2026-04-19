@@ -41,4 +41,24 @@ const unfollowUser = async (followerId, followingId) => {
 
 }
 
-module.exports = {followUser, unfollowUser}
+const getFollowers = async (userId) => {
+    if(!userId) {
+        const error = new Error('Missing Fields');
+        error.statusCode = 400
+        throw error
+    }
+
+    return await followRepository.getFollowers(userId)
+}
+
+const getFollowing = async (userId) => {
+    if(!userId) {
+        const error = new Error('Missing Fields');
+        error.statusCode = 400
+        throw error
+    }
+
+    return await followRepository.getFollowing(userId)
+}
+
+module.exports = {followUser, unfollowUser, getFollowers, getFollowing}

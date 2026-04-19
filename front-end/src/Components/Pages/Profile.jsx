@@ -9,6 +9,7 @@ import { FaHeart, FaComment } from "react-icons/fa";
 import { useNavigate, useParams } from 'react-router-dom'
 import EditProfile from '../EditProfile.jsx'
 import SuccessToast from '../SuccessToast.jsx';
+import Followers from '../Followers.jsx'
 
 export const Profile = () => {
     const { id } = useParams()
@@ -19,6 +20,8 @@ export const Profile = () => {
     const queryClient = useQueryClient();
     const [isEditing, setIsEditing] = React.useState(false)
     const [successToast, setSuccessToast] = React.useState(false)
+    const [showFollowers, setShowFollowers] = React.useState(false)
+    const [type, setType] = React.useState(null)
 
     const fetchUser = async () => {
         try {
@@ -156,11 +159,17 @@ export const Profile = () => {
                             <span className='font-bold text-white'>{userProfile?.post_count}</span>
                             <span className='text-zinc-400 text-sm'>posts</span>
                         </div>
-                        <div className='flex flex-col md:flex-row items-center md:gap-1'>
+                        <div onClick={() => {
+                            setType('followers');
+                            setShowFollowers(true);
+                            }} className='cursor-pointer flex flex-col md:flex-row items-center md:gap-1'>
                             <span className='font-bold text-white'>{userProfile?.follower_count}</span>
                             <span className='text-zinc-400 text-sm'>followers</span>
                         </div>
-                        <div className='flex flex-col md:flex-row items-center md:gap-1'>
+                        <div onClick={()=> {
+                            setType('following');
+                            setShowFollowers(true);
+                        }} className='flex flex-col md:flex-row items-center md:gap-1'>
                             <span className='font-bold text-white'>{userProfile?.following_count}</span>
                             <span className='text-zinc-400 text-sm'>following</span>
                         </div>
@@ -228,6 +237,11 @@ export const Profile = () => {
     {isEditing && (
         <div className='fixed inset-0 bg-black/50 flex items-center justify-center z-[1001] p-4'>
             <EditProfile setIsEditing={setIsEditing} setSuccessToast={setSuccessToast} />
+        </div>
+    )}
+    {showFollowers && (
+        <div className='fixed inset-0 bg-black/50 flex items-center justify-center z-[1001] p-4'>
+            <Followers setShowFollowers={setShowFollowers} type={type}/>
         </div>
     )}
 </>
