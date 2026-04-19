@@ -241,155 +241,137 @@ const Post = () => {
 
   return (
     <>
-      <div className="fixed  inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
-        {/* Left: Post Media */}
-        <div className="flex items-center">
-          {post.media_type === 'image' ? (
-            <img src={post.media_url} className="w-[678px] h-[678px] object-cover" />
-          ) : (
-            <video autoPlay loop className="w-[678px] h-[678px] object-cover">
-              <source src={post.media_url} />
-            </video>
+  {/* Modal Overlay: 
+      On mobile, we make it a full-screen view. 
+      On desktop, it remains a centered modal with a backdrop. */}
+  <div className="fixed inset-0 bg-black md:bg-black/80 flex flex-col md:flex-row items-center justify-center z-50 overflow-y-auto md:overflow-hidden">
+    
+    {/* Close Button: 
+        On mobile, it needs to be clearly visible at the top. */}
+    <div 
+      onClick={() => navigate(-1)} 
+      className="absolute top-4 right-4 text-white cursor-pointer z-[60] hover:opacity-70"
+    >
+      <IoMdClose className='text-3xl md:text-4xl' />
+    </div>
+
+    {/* CONTAINER: Wraps both Media and Comments */}
+    <div className="flex flex-col md:flex-row w-full max-w-none md:max-w-[1083px] bg-black md:bg-transparent min-h-screen md:min-h-0">
+      
+      {/* Left (Top on Mobile): Post Media */}
+      <div className="w-full md:w-[678px] aspect-square md:h-[678px] flex items-center bg-black">
+        {post.media_type === 'image' ? (
+          <img src={post.media_url} className="w-full h-full object-contain md:object-cover" alt="post" />
+        ) : (
+          <video autoPlay loop muted className="w-full h-full object-contain md:object-cover">
+            <source src={post.media_url} />
+          </video>
+        )}
+      </div>
+
+      {/* Right (Bottom on Mobile): Metadata and Comments */}
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="bg-black md:bg-zinc-900 w-full md:w-[405px] h-full md:h-[678px] flex flex-col relative border-t border-zinc-800 md:border-t-0"
+      >
+        {/* Header: Fixed at top of comment section */}
+        <div className="flex items-center p-4 md:p-6 border-b border-zinc-800 md:border-none">
+          <img src={post.profile_picture} alt="" className="w-8 h-8 rounded-full object-cover" />
+          <h2 onClick={() => navigate(`/profile/${post.user_id}`)} className="text-white font-semibold text-sm ml-4 hover:cursor-pointer">
+            {post.username}
+          </h2>
+          <div className='h-[3px] w-[3px] bg-white mx-2 rounded-full hidden md:block' ></div>
+          {post?.is_following && post.user_id === user.id ? null : (
+            <button onClick={() => handleFollow(post.user_id)} className='text-blue-500 font-bold text-sm ml-2 hover:text-blue-300'>
+              Follow
+            </button>
           )}
+          <button onClick={() => setActivePostOptions({ postId: post.id, userId: post.user_id })} className='ml-auto'>
+            <BsThreeDots className="text-white w-5 h-5 cursor-pointer" />
+          </button>
         </div>
 
-        {/* Right: Metadata and Comments */}
-        <div
-          onClick={(e) => e.stopPropagation()}
-          className="bg-zinc-900 w-[405px] max-w-[700px] h-[678px] p-6 flex flex-col relative"
-        >
-          {/* Header */}
-          <div className="flex items-center mb-4">
-            <img src={post.profile_picture} alt="" className="w-[32px] h-[32px] rounded-full" />
-            <h2 onClick={() => navigate(`/profile/${post.user_id}`)} className="text-white font-semibold text-sm ml-4 hover:cursor-pointer">{post.username}</h2>
-            <div className='h-[3px] w-[3px] bg-white mx-2' ></div>
-            {post?.is_following && post.user_id === user.id ? null : <button onClick={() => handleFollow(post.user_id)} className='text-blue-500 font-bold ml-2 hover:text-blue-300 hover:cursor-pointer'>Follow</button>}
-            <div className={`flex flex-1 text-gray-400 text-xs ml-auto `}>
-              <button onClick={() => setActivePostOptions({ postId: post.id, userId: post.user_id })} className='ml-auto'>
-                <BsThreeDots className="text-white w-5 h-5 cursor-pointer hover:text-gray-400" />
-              </button>
+        {/* Scrollable Comments Area */}
+        <div className="flex-1 overflow-y-auto px-4 md:px-6 no-scrollbar pb-[180px] md:pb-0">
+          {/* Post Description (Only visible in comments area on Desktop) */}
+          <div className="hidden md:flex items-start mb-6 pt-2">
+            <img src={post.profile_picture} alt="" className="w-8 h-8 rounded-full flex-shrink-0 object-cover" />
+            <div className="ml-4">
+              <span className="text-white font-semibold text-sm mr-2">{post.username}</span>
+              <span className="text-white text-sm">{post.description}</span>
             </div>
           </div>
 
-          {/* Description */}
-          <div className="flex items-center mb-4">
-            <img src={post.profile_picture} alt="" className="w-[32px] h-[32px] rounded-full" />
-            <h2 onClick={() => navigate(`/profile/${post.user_id}`)} className="text-white font-semibold text-sm ml-4 hover:cursor-pointer">{post.username}</h2>
-            <p className="text-white ml-2">{post.description}</p>
-          </div>
-
-          {/* Scrollable Comments */}
-          <div className="overflow-y-auto pr-2 mb-48 no-scrollbar w-full" style={{ height: 'calc(100% - 200px)' }}>
-            {data?.pages?.flatMap((page) =>
-              page.comments.map((comment) => (
-                <div key={comment.id} className="py-4 flex gap-3 mr-6 w-full">
-                  {/* Profile Picture */}
-                  <img
-                    src={comment.profile_picture}
-                    alt=""
-                    className="w-[32px] h-[32px] rounded-full flex-shrink-0"
-                  />
-
-                  {/* Comment Content */}
-                  <div className="inline flex-col">
-                    <p className="text-left text-white text-sm leading-snug">
-                      <span
-                        onClick={() => navigate(`/profile/${comment.user_id}`)}
-                        className="font-semibold inline-block mr-2 hover:cursor-pointer"
-                      >
-                        {comment.username}
-                      </span>
-                      <span className="inline align-top">{comment.content}</span>
-                    </p>
-
-                    <div className="flex items-center text-zinc-500 text-xs mt-1">
-                      {getCommentAge(comment.created_at)}
-
-                      <span className="ml-2 hover:cursor-pointer hover:text-zinc-300">
-                        {comment.likes} {comment.likes === 1 ? 'like' : 'likes'}
-                      </span>
-
-                      <span className="ml-2 hover:cursor-pointer hover:text-zinc-300">
-                        Reply
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Dynamic Heart Icon */}
-                  <div className="ml-auto flex items-center">
-                    <CiHeart
-                      onClick={() => handleCommentLikeToggle({
-                        commentId: comment.id,
-                        alreadyLiked: comment.liked_by_user
-                      })}
-                      className={`min-w-4 min-h-4 w-4 h-4 cursor-pointer transition-all duration-200 ${comment.liked_by_user
-                          ? 'text-red-500 scale-110'
-                          : 'text-white hover:text-red-500'
-                        }`}
-                      // If your icon library supports it, use style to force fill color
-                      style={comment.liked_by_user ? { fill: 'currentColor', stroke: 'none' } : {}}
-                    />
+          {/* Map Comments */}
+          {data?.pages?.flatMap((page) =>
+            page.comments.map((comment) => (
+              <div key={comment.id} className="py-3 flex gap-3 w-full">
+                <img src={comment.profile_picture} alt="" className="w-8 h-8 rounded-full flex-shrink-0 object-cover" />
+                <div className="flex flex-col flex-1">
+                  <p className="text-white text-sm">
+                    <span onClick={() => navigate(`/profile/${comment.user_id}`)} className="font-semibold mr-2 hover:cursor-pointer">
+                      {comment.username}
+                    </span>
+                    {comment.content}
+                  </p>
+                  <div className="flex items-center text-zinc-500 text-xs mt-1 gap-3">
+                    <span>{getCommentAge(comment.created_at)}</span>
+                    <span className="font-semibold cursor-pointer">{comment.likes} likes</span>
+                    <span className="font-semibold cursor-pointer">Reply</span>
                   </div>
                 </div>
-              ))
-            )}
-            <div
-              ref={ref}
-              className="h-10 flex items-center justify-center text-white mt-4"
-              style={{ minHeight: '40px' }}
-            >
-              {isFetchingNextPage ? (
-                'Loading...'
-              ) : (
-                !data?.pages?.[0]?.comments?.length && <span>No comments yet</span>
-              )}
-            </div>
-          </div>
+                <CiHeart 
+                  onClick={() => handleCommentLikeToggle({ commentId: comment.id, alreadyLiked: comment.liked_by_user })}
+                  className={`w-4 h-4 cursor-pointer mt-1 ${comment.liked_by_user ? 'text-red-500' : 'text-zinc-500'}`} 
+                />
+              </div>
+            ))
+          )}
 
-
-          {/* Fixed Bottom Actions */}
-          <div className="absolute bottom-0 left-0 right-0 bg-zinc-900 px-6 py-4 border-t border-zinc-700">
-            {/* Like / Comment / Share Icons */}
-            <div className="flex gap-4 mb-2">
-              <CiHeart onClick={() => handleLikeToggle({ postId: post.id, alreadyLiked: post.liked_by_user })} className={`${post.liked_by_user ? 'text-red-500' : 'text-white'} w-7 h-7 cursor-pointer ${post.liked_by_user ? null : 'hover:text-gray-400'}`} />
-              <IoChatbubbleOutline className="text-white w-7 h-7 cursor-pointer hover:text-gray-400" />
-              <IoPaperPlaneSharp className="text-white w-7 h-7 cursor-pointer hover:text-gray-400" />
-            </div>
-
-            {/* Like Count */}
-            <div onClick={() => { setActivePostLikes({ postId: post.id, userId: post.user_id }) }} className="flex items-center text-white text-sm font-bold mb-1 hover:cursor-pointer">
-              {post.like_count} likes
-            </div>
-
-            {/* View All Comments */}
-            <div className="flex items-center text-gray-400 text-sm hover:text-gray-300 block mb-2">
-              {getCommentAge(post.created_at)}
-            </div>
-
-            {/* Comment Input */}
-            <form onSubmit={(e) => handleSubmit(e, post.id)} className="flex items-center gap-2">
-              <input
-                type="text"
-                className="outline-none bg-transparent border-none text-sm text-white w-full"
-                ref={commentRef}
-                placeholder="Add a comment..."
-              />
-            </form>
+          <div ref={ref} className="py-4 text-center text-zinc-500 text-xs">
+            {isFetchingNextPage ? 'Loading...' : !data?.pages?.[0]?.comments?.length && 'No comments yet.'}
           </div>
         </div>
 
+        {/* Fixed Bottom Actions (Input/Likes) */}
+        <div className="absolute bottom-0 left-0 right-0 bg-black md:bg-zinc-900 p-4 md:px-6 md:py-4 border-t border-zinc-800">
+          <div className="flex gap-4 mb-3">
+            <CiHeart 
+              onClick={() => handleLikeToggle({ postId: post.id, alreadyLiked: post.liked_by_user })} 
+              className={`${post.liked_by_user ? 'text-red-500' : 'text-white'} w-7 h-7 cursor-pointer`} 
+            />
+            <IoChatbubbleOutline className="text-white w-7 h-7 cursor-pointer" />
+            <IoPaperPlaneSharp className="text-white w-7 h-7 cursor-pointer" />
+          </div>
 
+          <div 
+            onClick={() => setActivePostLikes({ postId: post.id, userId: post.user_id })} 
+            className="text-white text-sm font-bold mb-1 cursor-pointer"
+          >
+            {post.like_count} likes
+          </div>
+
+          <div className="text-zinc-500 text-[10px] uppercase mb-3">
+            {getCommentAge(post.created_at)}
+          </div>
+
+          <form onSubmit={(e) => handleSubmit(e, post.id)} className="flex items-center gap-2 border-t border-zinc-800 pt-3">
+            <input
+              type="text"
+              className="bg-transparent border-none text-sm text-white w-full outline-none"
+              ref={commentRef}
+              placeholder="Add a comment..."
+            />
+          </form>
+        </div>
       </div>
-      <div onClick={() => navigate(-1)} className="absolute top-4 right-4 text-white cursor-pointer z-50">
-        <IoMdClose className='text-white text-4xl' />
-      </div>
-      {activePostOptions && (
-        <PostOptions activePostOptions={activePostOptions} setActivePostOptions={setActivePostOptions} />
-      )}
-      {activePostLikes && (
-        <Likes activePostLikes={activePostLikes} setActivePostLikes={setActivePostLikes} />
-      )}
-    </>
+    </div>
+  </div>
+
+  {/* Other Modals */}
+  {activePostOptions && <PostOptions activePostOptions={activePostOptions} setActivePostOptions={setActivePostOptions} />}
+  {activePostLikes && <Likes activePostLikes={activePostLikes} setActivePostLikes={setActivePostLikes} />}
+</>
   );
 };
 
