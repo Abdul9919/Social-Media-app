@@ -6,8 +6,8 @@ services:
       - server
     build: ./front-end
     environment:
-      VITE_API_URL: http://141.145.159.42:5001
-      VITE_SOCKET_SERVER_URL: http://141.145.159.42:4999
+      VITE_API_URL: ${VITE_API_URL}
+      VITE_SOCKET_SERVER_URL: ${VITE_SOCKET_SERVER_URL}
     ports:
       - 5174:5173
     develop:
@@ -31,20 +31,20 @@ services:
     build: ./Backend
     environment:
       SERVER_PORT: 5001
-      CLOUDINARY_CLOUD_NAME: dv9af2izq
-      CLOUDINARY_API_KEY: 452547743138638
-      CLOUDINARY_API_SECRET: g2r71ozcowsUSmR9d3m26Qpp2_A
-      DB_USER: postgres
-      DB_HOST: database
-      DB_NAME: socialMediaApp
-      DB_PASSWORD: abdul12345
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
+      DB_USER: ${DB_USER}
+      DB_HOST: ${DB_HOST}
+      DB_NAME: ${DB_NAME}
+      DB_PASSWORD: ${DB_PASSWORD}
       DB_PORT: 5432
-      JWT_SECRET: your_jwt_secret_here
-      FRONTEND_URL: http://141.145.159.42:5174
-      REDIS_HOST: redis
+      JWT_SECRET: ${JWT_SECRET}
+      FRONTEND_URL: ${FRONTEND_URL}
+      REDIS_HOST: ${REDIS_HOST}
       REDIS_PORT: 6379
       RABBITMQ_URL: amqp://rabbitmq:5672
-      DATABASE_URL: postgresql://postgres:abdul12345@database:5432/socialMediaApp
+      DATABASE_URL: ${DATABASE_URL}
     ports:
       - 5001:5000
     develop:
@@ -60,9 +60,9 @@ services:
   database:
     image: postgres:17
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: abdul12345
-      POSTGRES_DB: socialMediaApp
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
     ports:
       - 5432:5432
     volumes:
@@ -80,8 +80,8 @@ services:
         condition: service_started
     environment:
       SERVER_PORT: 4999
-      REDIS_URL : 'redis://redis:6379'
-      REDIS_HOST: 'redis'
+      REDIS_URL : ${REDIS_URL}
+      REDIS_HOST: ${REDIS_HOST}
       REDIS_PORT: 6379
     ports:
       - 4999:4999
