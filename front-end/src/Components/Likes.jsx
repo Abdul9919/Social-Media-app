@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react'
 import { IoMdClose } from "react-icons/io";
 import axios from 'axios'
 import {useNavigate} from 'react-router-dom'
+import {AuthContext} from '../Contexts/AuthContext'
 
 export const Likes = ({ activePostLikes, setActivePostLikes }) => {
     const [users, setUsers] = useState([])
@@ -12,6 +13,8 @@ export const Likes = ({ activePostLikes, setActivePostLikes }) => {
     const [hasMore, setHasMore] = useState(true);
     const loaderRef = useRef();
     const navigate = useNavigate()
+    const {user} = React.useContext(AuthContext)
+    const userId = user?.id
     const fetchUsers = async (pageNumber) => {
         try {
             const response = await axios.get(`${apiUrl}/api/likes/${postId}`, {
@@ -73,7 +76,7 @@ export const Likes = ({ activePostLikes, setActivePostLikes }) => {
                                 className="w-12 h-12 rounded-full object-cover"
                             />
                             <span className='font-sans mb-1'>{user.username}</span>
-                            <button className='text-white font-bold mr-4 bg-blue-500 px-4 py-2 rounded-lg hover:text-white transition duration-300 ease-in-out text-sm ml-auto '>Follow</button>
+                            {userId !== user.user_id && <button className='text-white font-bold mr-4 bg-blue-500 px-4 py-2 rounded-lg hover:text-white transition duration-300 ease-in-out text-sm ml-auto '>Follow</button>}
                         </div>
                     ))}
                     {hasMore && (

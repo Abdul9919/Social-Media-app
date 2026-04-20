@@ -1,24 +1,48 @@
 import React, { useContext } from 'react';
 import { AuthContext } from '../Contexts/AuthContext.jsx';
 import axios from 'axios'
-import {Link} from 'react-router-dom'
+import {Link, useNavigate} from 'react-router-dom'
 
 export const PostOptions = ({activePostOptions, setActivePostOptions}) => {
   const { user } = useContext(AuthContext)
   const apiUrl = import.meta.env.VITE_API_URL
   const token = localStorage.getItem('token')
+  const navigate = useNavigate();
   const handleDelete = async () => {
     try {
       const postId = activePostOptions.postId
-      await axios.delete(`${apiUrl}/api/posts/${postId}`, {
+      const res = await axios.delete(`${apiUrl}/api/posts/${postId}`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
       })
+      if(res.status === 200) {
+        location.reload()
+      }
     } catch (error) {
       console.log(error.message)
     }
   }
+
+  const handleRemoveFollower = async () => {
+            try {
+                const res =await fetch(`${import.meta.env.VITE_API_URL}/api/follow/${activePostOptions.userId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+                if(res.status === 200) {
+                    location.reload()
+                }
+
+            } catch (error) {
+                alert('Failed to remove follower');
+                console.log(error)
+            }
+        
+    }
   return (
     <div
       className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
@@ -28,7 +52,7 @@ export const PostOptions = ({activePostOptions, setActivePostOptions}) => {
         className="flex flex-col items-center bg-zinc-800 text-white rounded-4xl shadow-lg w-[400px] h-[350px]"
         onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
       >
-        {activePostOptions.userId !== user.id ? <span className='flex text-red-400 font-bold py-4 hover:cursor-pointer'>Unfollow</span> : <button className='flex text-red-400 font-bold py-4 hover:cursor-pointer' onClick={handleDelete}>Delete</button>} {/*NEED TO WORK ON THIS FUNCTIONALITY */}
+        {activePostOptions.userId !== user.id ? <span onClick={handleRemoveFollower} className='flex text-red-400 font-bold py-4 hover:cursor-pointer'>Unfollow</span> : <button className='flex text-red-400 font-bold py-4 hover:cursor-pointer' onClick={handleDelete}>Delete</button>} {/*NEED TO WORK ON THIS FUNCTIONALITY */}
         <div className='flex-grow max-h-px min-w-[100%] bg-zinc-700'></div>
         <span className='flex text-white  py-4 hover:cursor-pointer'>Share to...</span> {/*NEED TO WORK ON THIS FUNCTIONALITY */}
         <div className='flex-grow max-h-px min-w-[100%] bg-zinc-700'></div>
@@ -36,7 +60,7 @@ export const PostOptions = ({activePostOptions, setActivePostOptions}) => {
         <div className='flex-grow max-h-px min-w-[100%] bg-zinc-700'></div>
         {activePostOptions.userId === user.id ? <span className='flex text-white  py-4 hover:cursor-pointer'>Edit</span> : <Link to={`/post/${activePostOptions.postId}`}><span className='flex text-white  py-4 hover:cursor-pointer'>Go to Post</span></Link>} {/*NEED TO WORK ON THIS FUNCTIONALITY */}
         <div className='flex-grow max-h-px min-w-[100%] bg-zinc-700'></div>
-        <span className='flex text-white  py-4 hover:cursor-pointer'>About this Account</span> {/*NEED TO WORK ON THIS FUNCTIONALITY */}
+        <span onClick={() => navigate(`/profile/${activePostOptions.userId}`)} className='flex text-white  py-4 hover:cursor-pointer'>About this Account</span> {/*NEED TO WORK ON THIS FUNCTIONALITY */}
         <div className='flex-grow max-h-px min-w-[100%] bg-zinc-700'></div>
         <span onClick={() => setActivePostOptions(null)} className='flex text-white  py-4 hover:cursor-pointer'>Cancel</span>
       </div>
