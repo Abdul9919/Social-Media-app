@@ -9,6 +9,8 @@ const Followers = ({ setShowFollowers, type }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const {id} = useParams();
     const navigate = useNavigate();
+    const {user} = React.useContext(AuthContext);
+    const userId = user?.id;
 
     useEffect(() => {
         const fetchFollowers = async () => {
@@ -55,6 +57,43 @@ const Followers = ({ setShowFollowers, type }) => {
     const filteredFollowers = followers.filter(user =>
         user.username.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    const handleRemoveFollower = async (id) => {
+        if(type === 'followers') {
+            try {
+                const res =await fetch(`${import.meta.env.VITE_API_URL}/api/follow/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+                if(res.status === 200) {
+                    const updatedFollowers = followers.filter(follower => follower.id !== id);
+                    setFollowers(updatedFollowers);
+                }
+
+            } catch (error) {
+                alert('Failed to remove follower');
+                console.log(error)
+            }
+        }
+        if(type === 'following') {
+            try {
+                await fetch(`${import.meta.env.VITE_API_URL}/api/follow/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+
+            } catch (error) {
+                alert('Failed to remove follower');
+                console.log(error)
+            }
+        }
+    }
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 font-sans">
@@ -113,9 +152,9 @@ const Followers = ({ setShowFollowers, type }) => {
                                     </div>
                                 </div>
 
-                                <button className="cursor-pointer bg-[#efefef] hover:bg-[#dbdbdb] text-black text-[13px] font-semibold px-4 py-1.5 rounded-lg transition-colors">
+                                {userId === user.id && <button onClick={() => handleRemoveFollower(user.id)} className="cursor-pointer bg-[#efefef] hover:bg-[#dbdbdb] text-black text-[13px] font-semibold px-4 py-1.5 rounded-lg transition-colors">
                                     Remove
-                                </button>
+                                </button>}
                             </div>
                         ))
                     ) : (
