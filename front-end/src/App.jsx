@@ -13,6 +13,7 @@ import lazyWithDelay from './Utils/lazyWithDelay'
 import { Profile } from './Components/Pages/Profile'
 import { SocketProvider } from './Contexts/SocketContext'
 import  Notifications  from './Components/Notifications'
+import Explore from './Components/Pages/Explore'
 const Post = lazyWithDelay(() => import('./Components/Post'), 300)
 
 function App() {
@@ -34,6 +35,7 @@ function App() {
           <Route path="/spinner" element={<Spinner />} />
           <Route path="/post/options/:id" element={<PrivateRoute><PostOptions /></PrivateRoute>} />
           <Route path='/profile/:id' element={<PrivateRoute><Suspense fallback={<Spinner />}><Profile/></Suspense></PrivateRoute>}/>
+          <Route path="/explore" element={<PrivateRoute><Explore /></PrivateRoute>} />
         </Routes>
         </SocketProvider>
     </AuthProvider>

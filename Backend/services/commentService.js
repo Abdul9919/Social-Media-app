@@ -81,6 +81,11 @@ const createComment = async (userId, postId, content) => {
         message: `${actorUsername} commented on your post`,
       });
     }
+    await publishToQueue('userInterests-queue', {
+      userId: userId,
+      postId: postId,
+      type: 'comment'
+    });
 
     return comment
 

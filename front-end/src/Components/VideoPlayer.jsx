@@ -37,7 +37,6 @@ const VideoPlayer = ({ src }) => {
       ref={videoRef}
       src={src}
       className="w-[470px] h-[575px] object-cover"
-      muted
       loop
       playsInline
     />

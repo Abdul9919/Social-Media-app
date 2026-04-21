@@ -38,7 +38,7 @@ const Navbar = () => {
         </div>
 
         {/* Explore */}
-        <div className="flex items-center gap-4 hover:bg-zinc-900 transition duration-300 rounded-lg p-3 cursor-pointer">
+        <div onClick={() => navigate('/explore')} className="flex items-center gap-4 hover:bg-zinc-900 transition duration-300 rounded-lg p-3 cursor-pointer">
           <FaRegCompass className="text-white text-2xl md:text-3xl" />
           <h2 className="text-white text-lg font-medium hidden md:block">Explore</h2>
         </div>

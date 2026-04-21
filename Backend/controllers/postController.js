@@ -3,6 +3,7 @@ const cloudinary = require('../config/cloudinary.js');
 const fs = require('fs/promises');
 const { client } = require('../Database/redis.js');
 const postService = require('../services/postService.js');
+const { publishToQueue } = require('../queue/producer.js');
 
 const getPosts = async (req, res) => {
   try {
@@ -196,15 +197,15 @@ const createPost = async (req, res) => {
       overwrite: false,
       resource_type: 'auto'
     });
-    if(result.error) {
+    if (result.error) {
       console.log(result.error);
       return res.status(500).json({ message: 'Error uploading media' });
     }
     let media_type;
-    if(file.mimetype === 'video/mp4' || file.mimetype === 'video/webm' || file.mimetype === 'video/avi' || file.mimetype === 'video/mov'){
+    if (file.mimetype === 'video/mp4' || file.mimetype === 'video/webm' || file.mimetype === 'video/avi' || file.mimetype === 'video/mov') {
       media_type = 'video';
     }
-    else{
+    else {
       media_type = 'image';
     }
     // console.log(result)
@@ -214,6 +215,12 @@ const createPost = async (req, res) => {
       [description, result.secure_url, media_type, userId]
     );
     await client.set(`post:${newPost.rows[0].id}:like_count`, 0);
+
+    await publishToQueue('postTags-queue', {
+      postId: newPost.rows[0].id,
+      media_url: result.secure_url,
+      description,
+    });
 
     res.status(201).json(newPost.rows[0]);
   } catch (error) {
@@ -306,4 +313,140 @@ const getUserPosts = async (req, res) => {
   }
 }
 
-module.exports = { getPosts, updatePost, deletePost, createPost, getSinglePost, getUserPosts }
+const getUserFeedPosts = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    // Set a fixed bulk size for "Explore" without specific page logic
+    const totalPostsToFetch = 50;
+    const interestLimit = Math.floor(totalPostsToFetch * 0.7);
+    const randomLimit = totalPostsToFetch - interestLimit;
+
+    const query = `
+  WITH UserTopTags AS (
+    -- Get user's top interest tags based on score
+    SELECT tag_id 
+    FROM user_interests 
+    WHERE user_id = $1 
+    ORDER BY score DESC 
+    LIMIT 15
+  ),
+  InterestedPosts AS (
+    -- 70% matching user's tags
+    -- We use GROUP BY to ensure unique post IDs while keeping ORDER BY valid
+    SELECT p.id
+    FROM posts p
+    JOIN "_PostToTag" pt ON p.id = pt."A"
+    WHERE pt."B" IN (SELECT tag_id FROM UserTopTags)
+      AND p.user_id != $1
+    GROUP BY p.id
+    ORDER BY MAX(p.created_at) DESC
+    LIMIT $2
+  ),
+  RandomPosts AS (
+    -- 30% completely random
+    SELECT p.id
+    FROM posts p
+    WHERE p.id NOT IN (SELECT id FROM InterestedPosts)
+      AND p.user_id != $1
+    ORDER BY RANDOM()
+    LIMIT $3
+  ),
+  CombinedIds AS (
+    SELECT id FROM InterestedPosts
+    UNION ALL
+    SELECT id FROM RandomPosts
+  )
+  SELECT 
+    p.*, 
+    u.username, 
+    u.profile_picture,
+    (SELECT COUNT(*) FROM comments WHERE post_id = p.id) AS comment_count,
+    EXISTS (
+      SELECT 1 FROM likes 
+      WHERE post_id = p.id AND user_id = $1
+    ) AS liked_by_user
+  FROM posts p
+  JOIN users u ON p.user_id = u.id 
+  WHERE p.id IN (SELECT id FROM CombinedIds)
+  ORDER BY RANDOM();
+`;
+
+    // Execute with computed limits
+    const result = await pool.query(query, [userId, interestLimit, randomLimit]);
+    const posts = result.rows;
+
+    // Post-processing enrichment (Likes & Comments)
+    const enrichedPosts = await Promise.all(posts.map(async post => {
+
+      // 1. Like Count with Redis
+      const likeCountCache = await client.get(`post:${post.id}:like_count`);
+      let like_count;
+      if (likeCountCache) {
+        like_count = parseInt(likeCountCache);
+      } else {
+        const likeCountResult = await pool.query('SELECT COUNT(*) AS like_count FROM likes WHERE post_id = $1', [post.id]);
+        like_count = parseInt(likeCountResult.rows[0].like_count);
+        await client.set(`post:${post.id}:like_count`, like_count, { EX: 600 });
+      }
+
+      // 2. Initial Comments with Redis
+      const cacheKey = `post_comments:${post.id}_${userId}:initial`;
+      let comments;
+      const cached = await client.get(cacheKey);
+
+      if (cached) {
+        comments = JSON.parse(cached);
+      } else {
+        const commentsResult = await pool.query(`
+          SELECT 
+            c.id, c.user_id, c.content, c.created_at, c.likes,
+            u.username, u.profile_picture,
+            EXISTS (
+              SELECT 1 FROM comment_likes cl 
+              WHERE cl.comment_id = c.id AND cl.user_id = $2
+            ) AS liked_by_user
+          FROM comments c
+          JOIN users u ON c.user_id = u.id
+          WHERE post_id = $1
+          ORDER BY c.created_at DESC
+          LIMIT 5
+        `, [post.id, userId]);
+        comments = commentsResult.rows;
+        await client.set(cacheKey, JSON.stringify(comments), { EX: 1800 });
+      }
+
+      return { ...post, comments, like_count };
+    }));
+
+    return res.status(200).json(enrichedPosts);
+
+  } catch (err) {
+    console.error("Explore fetch error:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+const handleViewPost = async (req, res) => {
+  try {
+    const { postId } = req.body;
+    const userId = req.user?.id;
+    console.log('post viewedddd')
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+    await publishToQueue('userInterests-queue', { 
+      userId: userId,
+      postId: postId,
+      type: 'view'
+     });
+  } catch (error) {
+    console.error("View post error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+module.exports = { getPosts, updatePost, deletePost, createPost, getSinglePost, getUserPosts, getUserFeedPosts, handleViewPost }
