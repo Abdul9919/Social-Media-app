@@ -6,6 +6,8 @@ const postRepository = require('../repositories/postRepository.js');
 const userRepository = require('../repositories/userRepository.js');
 const axios = require('axios');
 
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
 async function notifWorker(queueName) {
     const channel = getChannel();
     await channel.assertQueue(queueName, { durable: true });
@@ -108,13 +110,13 @@ const postTagWorker = async (queueName) => {
             console.log(`📦 Received Post ID: ${postId} for tagging...`);
 
             // 2. Make the request to your n8n workflow
-            const n8nWebhookUrl = 'http://localhost:5678/webhook-test/0a7adbe8-6ac4-4357-a05d-82be09678db8';
+            const n8nWebhookUrl = process.env.N8N_WEBHOOK_URL;
 
             const response = await axios.post(n8nWebhookUrl, {
                 postId,
                 media_url,
                 description
-            }, { timeout: 30000 }); // 30s timeout for AI processing
+            }, { timeout: 90000 }); // 30s timeout for AI processing
 
             const tags = response.data.tags; // Expecting ["tag1", "tag2", ...]
 
@@ -136,6 +138,7 @@ const postTagWorker = async (queueName) => {
                 });
 
                 console.log(`✅ Post ${postId} successfully tagged.`);
+                await sleep(4000);
             } else {
                 console.warn(`⚠️  No tags returned from n8n for Post ${postId}`);
             }
@@ -170,7 +173,7 @@ const userInterestsWorker = async (queueName) => {
             const weights = {
                 'like': 0.15, 
                 'view': 0.05,
-                'comment': 0.25
+                'comment': 0.20
             };
             const increment = weights[type] || 0.05;
 
