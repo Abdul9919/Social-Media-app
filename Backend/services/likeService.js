@@ -35,6 +35,12 @@ const likePost = async (userId, postId) => {
     });
   }
 
+  await publishToQueue('userInterests-queue', {
+      userId: userId,
+      postId: postId,
+      type: 'like'
+    });
+
   return like
 };
 

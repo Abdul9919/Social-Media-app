@@ -263,7 +263,7 @@ const Post = () => {
         {post.media_type === 'image' ? (
           <img src={post.media_url} className="w-full h-full object-contain md:object-cover" alt="post" />
         ) : (
-          <video autoPlay loop muted className="w-full h-full object-contain md:object-cover">
+          <video autoPlay loop className="w-full h-full object-contain md:object-cover">
             <source src={post.media_url} />
           </video>
         )}

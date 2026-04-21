@@ -12,7 +12,7 @@ const notificationRoutes = require('./routes/notificationRoutes.js');
 const {connectRedis, client}= require('./Database/redis.js');
 const helmet = require('helmet');
 const { connectQueue } = require('./queue/connection.js');
-const { notifWorker } = require('./worker/worker.js');
+const { notifWorker, postTagWorker, userInterestsWorker } = require('./worker/worker.js');
 
 
 const app = express();
@@ -39,7 +39,9 @@ app.use(cors(
 
 connectQueue().then(() => {
     console.log('RabbitMQ connection established');
-    notifWorker('notif-queue')
+    notifWorker('notif-queue');
+    postTagWorker('postTags-queue');
+    userInterestsWorker('userInterests-queue');
 
 })
 

@@ -3,6 +3,7 @@ const cloudinary = require('../config/cloudinary.js');
 const fs = require('fs/promises');
 const { client } = require('../Database/redis.js');
 const postService = require('../services/postService.js');
+const { publishToQueue } = require('../queue/producer.js');
 
 const getPosts = async (req, res) => {
   try {
@@ -214,6 +215,12 @@ const createPost = async (req, res) => {
       [description, result.secure_url, media_type, userId]
     );
     await client.set(`post:${newPost.rows[0].id}:like_count`, 0);
+
+    await publishToQueue('postTags-queue', {
+      postId: newPost.rows[0].id,
+      media_url: result.secure_url,
+      description,
+    });
 
     res.status(201).json(newPost.rows[0]);
   } catch (error) {

@@ -13,6 +13,7 @@
   "dependencies": {
     "@prisma/client": "^6.19.3",
     "amqplib": "^1.0.3",
+    "axios": "^1.15.1",
     "bcryptjs": "^3.0.2",
     "body-parser": "^2.2.0",
     "cloudinary": "^2.7.0",

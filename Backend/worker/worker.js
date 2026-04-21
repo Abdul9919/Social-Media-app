@@ -1,9 +1,10 @@
 const { getChannel } = require('../queue/connection.js');
 const { prisma } = require('../Database/dbconnect.js');
-const {publisher} = require('../Database/redis.js');
+const { publisher } = require('../Database/redis.js');
 // const {client} = require('../Database/redis.js');
 const postRepository = require('../repositories/postRepository.js');
 const userRepository = require('../repositories/userRepository.js');
+const axios = require('axios');
 
 async function notifWorker(queueName) {
     const channel = getChannel();
@@ -88,4 +89,153 @@ async function notifWorker(queueName) {
     });
 }
 
-module.exports = { notifWorker };
+const postTagWorker = async (queueName) => {
+    const channel = getChannel(); // Assuming your RabbitMQ connection utility
+    await channel.assertQueue(queueName, { durable: true });
+
+    // Process only 1 message at a time to ensure the AI has time to think
+    channel.prefetch(1);
+    console.log(`🚀 Post Tag worker started for queue: ${queueName}`);
+
+    channel.consume(queueName, async (msg) => {
+        if (!msg) return;
+
+        try {
+            // 1. Parse incoming data from RabbitMQ
+            const postData = JSON.parse(msg.content.toString());
+            const { postId, media_url, description } = postData;
+
+            console.log(`📦 Received Post ID: ${postId} for tagging...`);
+
+            // 2. Make the request to your n8n workflow
+            const n8nWebhookUrl = 'http://localhost:5678/webhook-test/0a7adbe8-6ac4-4357-a05d-82be09678db8';
+
+            const response = await axios.post(n8nWebhookUrl, {
+                postId,
+                media_url,
+                description
+            }, { timeout: 30000 }); // 30s timeout for AI processing
+
+            const tags = response.data.tags; // Expecting ["tag1", "tag2", ...]
+
+            // 3. Update Database using the separate Tags table
+            if (Array.isArray(tags) && tags.length > 0) {
+                console.log(`🏷️  Applying tags to DB: ${tags.join(', ')}`);
+
+                await prisma.post.update({
+                    where: { id: postId },
+                    data: {
+                        tags: {
+                            // connectOrCreate ensures we don't create duplicate "react" tags
+                            connectOrCreate: tags.map((tagName) => ({
+                                where: { name: tagName },
+                                create: { name: tagName },
+                            })),
+                        },
+                    },
+                });
+
+                console.log(`✅ Post ${postId} successfully tagged.`);
+            } else {
+                console.warn(`⚠️  No tags returned from n8n for Post ${postId}`);
+            }
+
+            // 4. Acknowledge the message to RabbitMQ
+            channel.ack(msg);
+
+        } catch (error) {
+            console.error('❌ Error in Post Tag Worker:', error.message);
+
+            /* Re-queueing logic: If n8n is down, put the message back in the queue.
+               The 'true' parameter as the 3rd argument tells RabbitMQ to re-queue.
+            */
+            channel.nack(msg, false, true);
+        }
+    });
+};
+
+const userInterestsWorker = async (queueName) => {
+    const channel = getChannel(); 
+    await channel.assertQueue(queueName, { durable: true });
+
+    channel.prefetch(10); 
+    console.log(`🧠 Interest Scoring worker started: ${queueName}`);
+
+    channel.consume(queueName, async (msg) => {
+        if (!msg) return;
+
+        try {
+            const { userId, postId, type } = JSON.parse(msg.content.toString());
+
+            const weights = {
+                'like': 0.15, 
+                'view': 0.05,
+                'comment': 0.25
+            };
+            const increment = weights[type] || 0.05;
+
+            // Pre-convert to Numbers to avoid repetitive logic
+            const targetUserId = Number(userId);
+            const targetPostId = Number(postId);
+
+            console.log(`📈 Processing ${type} for User ${targetUserId} on Post ${targetPostId}`);
+
+            const post = await prisma.post.findUnique({
+                where: { id: targetPostId },
+                select: {
+                    tags: { select: { id: true } }
+                }
+            });
+
+            if (!post || !post.tags.length) {
+                console.log(`Skipping: Post ${targetPostId} has no tags.`);
+                return channel.ack(msg);
+            }
+
+            const updatePromises = post.tags.map(async (tag) => {
+                const targetTagId = Number(tag.id);
+
+                // Corrected where clause: explicitly naming userId and tagId
+                const existing = await prisma.userInterest.findUnique({
+                    where: {
+                        userId_tagId: { 
+                            userId: targetUserId, 
+                            tagId: targetTagId 
+                        }
+                    }
+                });
+
+                const oldScore = existing?.score || 0;
+                const newScore = oldScore + (increment * (1 - oldScore));
+
+                return prisma.userInterest.upsert({
+                    where: {
+                        userId_tagId: { 
+                            userId: targetUserId, 
+                            tagId: targetTagId 
+                        }
+                    },
+                    update: { 
+                        score: newScore,
+                        updatedAt: new Date() 
+                    },
+                    create: {
+                        userId: targetUserId,
+                        tagId: targetTagId,
+                        score: newScore
+                    }
+                });
+            });
+
+            await Promise.all(updatePromises);
+            
+            console.log(`✅ Updated ${post.tags.length} interests for User ${targetUserId}`);
+            channel.ack(msg);
+
+        } catch (error) {
+            console.error('❌ Interest Worker Error:', error);
+            channel.nack(msg, false, true);
+        }
+    });
+};
+module.exports = { notifWorker, postTagWorker, userInterestsWorker };
