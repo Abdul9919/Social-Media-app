@@ -325,13 +325,17 @@ const getUserFeedPosts = async (req, res) => {
     const totalPostsToFetch = 12;
     const offset = (page - 1) * totalPostsToFetch;
 
-    const query = `
-WITH UserTopTags AS (
+    const query = `WITH UserTopTags AS (
     SELECT tag_id 
     FROM user_interests 
     WHERE user_id = $1 
     ORDER BY score DESC 
     LIMIT 100
+),
+Followees AS (
+    SELECT following
+    FROM followers
+    WHERE followed_by = $1
 ),
 InterestedPosts AS (
     SELECT DISTINCT ON (p.id) p.id, 1 AS priority, p.created_at
@@ -339,11 +343,13 @@ InterestedPosts AS (
     JOIN "_PostToTag" pt ON p.id = pt."A"
     WHERE pt."B" IN (SELECT tag_id FROM UserTopTags)
       AND p.user_id != $1
+      AND p.user_id NOT IN (SELECT following FROM Followees)
 ),
 RandomPosts AS (
     SELECT p.id, 0 AS priority, p.created_at
     FROM posts p
     WHERE p.user_id != $1
+      AND p.user_id NOT IN (SELECT following FROM Followees)
       AND p.id NOT IN (SELECT id FROM InterestedPosts)
 ),
 CombinedPool AS (
@@ -372,8 +378,7 @@ FROM RankedPool rp
 JOIN posts p ON p.id = rp.id
 JOIN users u ON p.user_id = u.id
 WHERE rp.row_num > $2 AND rp.row_num <= $3
-ORDER BY rp.priority DESC, p.created_at DESC;
-`;
+ORDER BY rp.priority DESC, p.created_at DESC;`
 
 // Clean offset math — no more split limits
 
