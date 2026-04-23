@@ -242,7 +242,7 @@ const Home = () => {
     postComment({ postId, comment })
   }
 
-
+  //  if (data?.pages.flatMap(page => page.posts).length === 0) return <div className="text-white text-center p-10">Only posts of users you follow are shown here</div>;
   return (
     <>
       {/* CONTAINER: 
@@ -263,6 +263,9 @@ const Home = () => {
         */}
         <div className={`flex-1 overflow-y-auto h-screen px-0 md:px-6 py-4 md:py-8 z-10 
           ${showNotifications ? 'md:ml-[20%]' : ''} pb-20 md:pb-8`}>
+                    {data?.pages.flatMap((page) => page.posts).length === 0 ? (
+          <div className="text-white text-center p-10">No posts to show. Follow some users or check back later!</div>
+        ) : null}
           
           <div className="flex flex-col items-center gap-6">
             {data?.pages.flatMap((page) =>

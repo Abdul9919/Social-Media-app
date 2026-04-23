@@ -101,6 +101,7 @@ const Explore = () => {
           3. no-scrollbar: (Optional) if you want that clean look.
       */}
       <main className="flex-1 h-full overflow-y-auto custom-scrollbar">
+
         <div className="grid grid-cols-3 grid-flow-dense auto-rows-[150px] md:auto-rows-[300px] gap-1">
           {data?.pages.flatMap((page) => page.posts).map((post) => {
             // const isFeatured = index % 10 === 2;

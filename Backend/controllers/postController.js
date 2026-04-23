@@ -18,26 +18,31 @@ const getPosts = async (req, res) => {
 
     // Fetch posts with subqueries to optimize performance
     const result = await pool.query(`
-     SELECT 
+    WITH Followees AS (
+        SELECT following
+        FROM followers
+        WHERE followed_by = $1
+    )
+    SELECT 
         p.*, 
         u.username, 
         u.profile_picture,
         COALESCE(c.comment_count, 0) AS comment_count,
         EXISTS (
-          SELECT 1 FROM likes 
-          WHERE post_id = p.id AND user_id = $1
+            SELECT 1 FROM likes 
+            WHERE post_id = p.id AND user_id = $1
         ) AS liked_by_user
-      FROM posts p
-      JOIN users u ON p.user_id = u.id 
-      LEFT JOIN (
+    FROM posts p
+    JOIN users u ON p.user_id = u.id 
+    LEFT JOIN (
         SELECT post_id, COUNT(*) AS comment_count
         FROM comments
         GROUP BY post_id
-      ) c ON c.post_id = p.id
-      ORDER BY p.created_at DESC
-      LIMIT $2 OFFSET $3
-
-    `, [userId, itemsPerPage, offset]);
+    ) c ON c.post_id = p.id
+    WHERE p.user_id IN (SELECT following FROM Followees)
+    ORDER BY p.created_at DESC
+    LIMIT $2 OFFSET $3
+`, [userId, itemsPerPage, offset]);
 
     const posts = result.rows;
 
@@ -380,13 +385,13 @@ JOIN users u ON p.user_id = u.id
 WHERE rp.row_num > $2 AND rp.row_num <= $3
 ORDER BY rp.priority DESC, p.created_at DESC;`
 
-// Clean offset math — no more split limits
+    // Clean offset math — no more split limits
 
-const result = await pool.query(query, [
-    userId,
-    offset,                          // $2 — start of window
-    offset + totalPostsToFetch       // $3 — end of window
-]);
+    const result = await pool.query(query, [
+      userId,
+      offset,                          // $2 — start of window
+      offset + totalPostsToFetch       // $3 — end of window
+    ]);
     const posts = result.rows;
     let nextPage;
     if (posts.length === totalPostsToFetch) {
