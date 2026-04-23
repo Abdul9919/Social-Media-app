@@ -19,6 +19,7 @@ export default function CreatePost({ onClose }) {
     const inputRef = useRef();
     const editingRef = useRef();
     const { user } = useContext(AuthContext);
+    const [disabled, setisDisabled] = useState(false);
 
     // User data (Parameterize for real ap
 
@@ -46,6 +47,7 @@ export default function CreatePost({ onClose }) {
 
     const handleShare = async () => {
         try {
+            setisDisabled(true);
             // Convert dataURL to blob
             const response = await fetch(finalEditedPreview);
             const blob = await response.blob();
@@ -59,7 +61,7 @@ export default function CreatePost({ onClose }) {
             const token = localStorage.getItem("token");
 
             // Make POST request
-            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/posts/`, {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/posts/`, { 
                 method: "POST",
                 headers: {
                     "Authorization": `Bearer ${token}`,
@@ -78,7 +80,7 @@ export default function CreatePost({ onClose }) {
     };
 
     const title = captioning ? "Create new post" : editing ? "Edit" : cropping ? "Crop" : preview ? "Edit photo" : "Create new post";
-    const modalWidth = (editing || captioning) ? "max-w-[800px]" : "max-w-[520px]";
+    // const modalWidth = (editing || captioning) ? "max-w-[800px]" : "max-w-[520px]";
 
 
         return (
@@ -118,7 +120,9 @@ export default function CreatePost({ onClose }) {
                         {captioning ? (
                             <button
                                 onClick={handleShare}
-                                className="text-[#0095f6] font-semibold text-sm hover:text-white transition-colors"
+                                disabled={disabled}
+                                className="disabled:opacity-50 text-[#0095f6] font-semibold text-sm hover:text-white transition-colors"
+                                
                             >
                                 Share
                             </button>

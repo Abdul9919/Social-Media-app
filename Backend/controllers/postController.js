@@ -18,26 +18,31 @@ const getPosts = async (req, res) => {
 
     // Fetch posts with subqueries to optimize performance
     const result = await pool.query(`
-     SELECT 
+    WITH Followees AS (
+        SELECT following
+        FROM followers
+        WHERE followed_by = $1
+    )
+    SELECT 
         p.*, 
         u.username, 
         u.profile_picture,
         COALESCE(c.comment_count, 0) AS comment_count,
         EXISTS (
-          SELECT 1 FROM likes 
-          WHERE post_id = p.id AND user_id = $1
+            SELECT 1 FROM likes 
+            WHERE post_id = p.id AND user_id = $1
         ) AS liked_by_user
-      FROM posts p
-      JOIN users u ON p.user_id = u.id 
-      LEFT JOIN (
+    FROM posts p
+    JOIN users u ON p.user_id = u.id 
+    LEFT JOIN (
         SELECT post_id, COUNT(*) AS comment_count
         FROM comments
         GROUP BY post_id
-      ) c ON c.post_id = p.id
-      ORDER BY p.created_at DESC
-      LIMIT $2 OFFSET $3
-
-    `, [userId, itemsPerPage, offset]);
+    ) c ON c.post_id = p.id
+    WHERE p.user_id IN (SELECT following FROM Followees)
+    ORDER BY p.created_at DESC
+    LIMIT $2 OFFSET $3
+`, [userId, itemsPerPage, offset]);
 
     const posts = result.rows;
 
@@ -316,68 +321,82 @@ const getUserPosts = async (req, res) => {
 const getUserFeedPosts = async (req, res) => {
   try {
     const userId = req.user?.id;
+    const page = parseInt(req.query.page);
     if (!userId) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
     // Set a fixed bulk size for "Explore" without specific page logic
-    const totalPostsToFetch = 50;
-    const interestLimit = Math.floor(totalPostsToFetch * 0.7);
-    const randomLimit = totalPostsToFetch - interestLimit;
+    const totalPostsToFetch = 12;
+    const offset = (page - 1) * totalPostsToFetch;
 
-    const query = `
-  WITH UserTopTags AS (
-    -- Get user's top interest tags based on score
+    const query = `WITH UserTopTags AS (
     SELECT tag_id 
     FROM user_interests 
     WHERE user_id = $1 
     ORDER BY score DESC 
-    LIMIT 15
-  ),
-  InterestedPosts AS (
-    -- 70% matching user's tags
-    -- We use GROUP BY to ensure unique post IDs while keeping ORDER BY valid
-    SELECT p.id
+    LIMIT 100
+),
+Followees AS (
+    SELECT following
+    FROM followers
+    WHERE followed_by = $1
+),
+InterestedPosts AS (
+    SELECT DISTINCT ON (p.id) p.id, 1 AS priority, p.created_at
     FROM posts p
     JOIN "_PostToTag" pt ON p.id = pt."A"
     WHERE pt."B" IN (SELECT tag_id FROM UserTopTags)
       AND p.user_id != $1
-    GROUP BY p.id
-    ORDER BY MAX(p.created_at) DESC
-    LIMIT $2
-  ),
-  RandomPosts AS (
-    -- 30% completely random
-    SELECT p.id
+      AND p.user_id NOT IN (SELECT following FROM Followees)
+),
+RandomPosts AS (
+    SELECT p.id, 0 AS priority, p.created_at
     FROM posts p
-    WHERE p.id NOT IN (SELECT id FROM InterestedPosts)
-      AND p.user_id != $1
-    ORDER BY RANDOM()
-    LIMIT $3
-  ),
-  CombinedIds AS (
-    SELECT id FROM InterestedPosts
+    WHERE p.user_id != $1
+      AND p.user_id NOT IN (SELECT following FROM Followees)
+      AND p.id NOT IN (SELECT id FROM InterestedPosts)
+),
+CombinedPool AS (
+    SELECT * FROM InterestedPosts
     UNION ALL
-    SELECT id FROM RandomPosts
-  )
-  SELECT 
+    SELECT * FROM RandomPosts
+),
+RankedPool AS (
+    SELECT *,
+        ROW_NUMBER() OVER (
+            ORDER BY priority DESC, created_at DESC
+        ) AS row_num
+    FROM CombinedPool
+)
+SELECT 
     p.*, 
     u.username, 
     u.profile_picture,
+    rp.priority,
     (SELECT COUNT(*) FROM comments WHERE post_id = p.id) AS comment_count,
     EXISTS (
-      SELECT 1 FROM likes 
-      WHERE post_id = p.id AND user_id = $1
+        SELECT 1 FROM likes 
+        WHERE post_id = p.id AND user_id = $1
     ) AS liked_by_user
-  FROM posts p
-  JOIN users u ON p.user_id = u.id 
-  WHERE p.id IN (SELECT id FROM CombinedIds)
-  ORDER BY RANDOM();
-`;
+FROM RankedPool rp
+JOIN posts p ON p.id = rp.id
+JOIN users u ON p.user_id = u.id
+WHERE rp.row_num > $2 AND rp.row_num <= $3
+ORDER BY rp.priority DESC, p.created_at DESC;`
 
-    // Execute with computed limits
-    const result = await pool.query(query, [userId, interestLimit, randomLimit]);
+    // Clean offset math — no more split limits
+
+    const result = await pool.query(query, [
+      userId,
+      offset,                          // $2 — start of window
+      offset + totalPostsToFetch       // $3 — end of window
+    ]);
     const posts = result.rows;
+    let nextPage;
+    if (posts.length === totalPostsToFetch) {
+      nextPage = page + 1;
+    }
 
     // Post-processing enrichment (Likes & Comments)
     const enrichedPosts = await Promise.all(posts.map(async post => {
@@ -422,7 +441,7 @@ const getUserFeedPosts = async (req, res) => {
       return { ...post, comments, like_count };
     }));
 
-    return res.status(200).json(enrichedPosts);
+    return res.status(200).json({ posts: enrichedPosts, nextPage });
 
   } catch (err) {
     console.error("Explore fetch error:", err);
@@ -438,11 +457,11 @@ const handleViewPost = async (req, res) => {
     if (!userId) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
-    await publishToQueue('userInterests-queue', { 
+    await publishToQueue('userInterests-queue', {
       userId: userId,
       postId: postId,
       type: 'view'
-     });
+    });
   } catch (error) {
     console.error("View post error:", error);
     res.status(500).json({ message: "Internal server error" });

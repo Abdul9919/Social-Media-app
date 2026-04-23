@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "socket:start": "nodemon index.js"
+    "socket:start": "nodemon --inspect=9230 index.js"
   },
   "keywords": [],
   "author": "",

@@ -195,7 +195,7 @@ const Post = () => {
     };
 
     const getAdjacentPostIds = () => {
-        const cachedData = queryClient.getQueryData(['posts']);
+        const cachedData = queryClient.getQueryData(['explore']);
         if (!cachedData) return { prevId: null, nextId: null };
 
         const allPosts = cachedData.pages.flatMap(page => page.posts);
@@ -211,9 +211,20 @@ const Post = () => {
     };
 
     const { prevId, nextId } = getAdjacentPostIds();
+    const handleRemoteLoad = () => {
+        // 1. Grab the internal query object from the cache
+        const query = queryClient.getQueryCache().find(['explore']);
+
+        // 2. If it exists, trigger the fetch
+        if (query) {
+            // This tells React Query to execute the fetch function for the next page
+            query.fetchNextPage();
+        }
+    };
 
     const goToPost = (targetId) => {
         if (targetId) navigate(`/post/${targetId}`);
+        if (!targetId) handleRemoteLoad();
     };
 
     if (isLoading) return <Spinner />;
@@ -225,23 +236,26 @@ const Post = () => {
                 {prevId && (
                     <button
                         onClick={() => goToPost(prevId)}
-                        className="fixed left-4 top-1/2 -translate-y-1/2 z-[60] p-2 bg-white/10 hover:bg-white/20 rounded-full transition-all hidden md:block"
+                        // Change 'hidden md:block' to 'block'
+                        className="fixed left-2 top-1/2 -translate-y-1/2 z-[60] p-1 bg-black/40 md:bg-white/10 hover:bg-white/20 rounded-full transition-all block"
                     >
-                        <IoIosArrowBack className="text-white text-3xl" />
+                        <IoIosArrowBack className="text-white text-2xl md:text-3xl" />
                     </button>
                 )}
 
+                {/* Next Button */}
                 {nextId && (
                     <button
                         onClick={() => goToPost(nextId)}
-                        className="fixed right-4 top-1/2 -translate-y-1/2 z-[60] p-2 bg-white/10 hover:bg-white/20 rounded-full transition-all hidden md:block"
+                        // Change 'hidden md:block' to 'block'
+                        className="fixed right-2 top-1/2 -translate-y-1/2 z-[60] p-1 bg-black/40 md:bg-white/10 hover:bg-white/20 rounded-full transition-all block"
                     >
-                        <IoIosArrowForward className="text-white text-3xl" />
+                        <IoIosArrowForward className="text-white text-2xl md:text-3xl" />
                     </button>
                 )}
 
                 <div
-                    onClick={() => navigate('/')}
+                    onClick={() => navigate(-1)}
                     className="absolute top-4 right-4 text-white cursor-pointer z-[60] hover:opacity-70"
                 >
                     <IoMdClose className='text-3xl md:text-4xl' />

@@ -1,0 +1,35 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Frontend (React)",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://192.168.18.41:5173",
+      "restart": true,
+      "webRoot": "${workspaceFolder}/front-end"
+    },
+    {
+      "name": "Attach to Server",
+      "type": "node",
+      "request": "attach",
+      "port": 9229, // Default Node debug port
+      "restart": true,
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "name": "Attach to Socket Server",
+      "type": "node",
+      "request": "attach",
+      "port": 9230, // We'll set this manually below
+      "restart": true,
+      "skipFiles": ["<node_internals>/**"]
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Full Stack Debug",
+      "configurations": ["Frontend (React)", "Attach to Server", "Attach to Socket Server"]
+    }
+  ]
+}
