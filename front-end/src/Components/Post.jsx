@@ -12,6 +12,7 @@ import Spinner from './Spinner.jsx';
 import { PostOptions } from './PostOptions.jsx';
 import { Likes } from './Likes.jsx';
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
+import { usePostFeed } from '../hooks/usePostFeed';
 
 const Post = () => {
     const { id } = useParams();
@@ -24,6 +25,11 @@ const Post = () => {
     const [activePostLikes, setActivePostLikes] = useState(null);
     const commentRef = React.useRef();
     const queryClient = useQueryClient();
+     const { data: posts,
+        status,
+        fetchNextPage: fetchMorePosts,
+        hasNextPage: hasMorePosts,
+      } = usePostFeed();
 
     useEffect(() => {
         if (!id) return;
@@ -194,38 +200,34 @@ const Post = () => {
         mutation.mutate(userId);
     };
 
-    const getAdjacentPostIds = () => {
-        const cachedData = queryClient.getQueryData(['explore']);
-        if (!cachedData) return { prevId: null, nextId: null };
-
-        const allPosts = cachedData.pages.flatMap(page => page.posts);
-        const numericId = Number(id);
-        const currentIndex = allPosts.findIndex(p => p.id === numericId);
-
-        if (currentIndex === -1) return { prevId: null, nextId: null };
-
-        return {
-            prevId: currentIndex > 0 ? allPosts[currentIndex - 1].id : null,
-            nextId: currentIndex < allPosts.length - 1 ? allPosts[currentIndex + 1].id : null
-        };
-    };
-
-    const { prevId, nextId } = getAdjacentPostIds();
-    const handleRemoteLoad = () => {
-        // 1. Grab the internal query object from the cache
-        const query = queryClient.getQueryCache().find(['explore']);
-
-        // 2. If it exists, trigger the fetch
-        if (query) {
-            // This tells React Query to execute the fetch function for the next page
-            query.fetchNextPage();
+    const handlePrev = () => {
+        const allPosts = posts.pages.flatMap((page) => page.posts);
+        const intId = parseInt(id)
+        const currentIndex = allPosts.findIndex((post) => post.id === intId);
+        if (currentIndex !== -1) {
+            const prevPost = allPosts[currentIndex - 1];
+            if (prevPost) {
+                navigate(`/post/${prevPost.id}`);
+            }
         }
-    };
+    }
 
-    const goToPost = (targetId) => {
-        if (targetId) navigate(`/post/${targetId}`);
-        if (!targetId) handleRemoteLoad();
-    };
+    const handleNext = () => {
+        const allPosts = posts.pages.flatMap((page) => page.posts);
+        const intId = parseInt(id)
+        const currentIndex = allPosts.findIndex((post) => post.id === intId);
+        if (currentIndex !== -1) {
+            const nextPost = allPosts[currentIndex + 1];
+            if (nextPost) {
+                navigate(`/post/${nextPost.id}`);
+            }
+            else {
+                fetchMorePosts();
+            }
+        }
+    }
+
+
 
     if (isLoading) return <Spinner />;
     if (isError) return <div>Error</div>;
@@ -233,9 +235,9 @@ const Post = () => {
     return (
         <>
             <div className="fixed inset-0 bg-black md:bg-black/80 flex flex-col md:flex-row items-center justify-center z-50 overflow-y-auto md:overflow-hidden">
-                {prevId && (
+                { (
                     <button
-                        onClick={() => goToPost(prevId)}
+                        onClick={handlePrev}
                         // Change 'hidden md:block' to 'block'
                         className="fixed left-2 top-1/2 -translate-y-1/2 z-[60] p-1 bg-black/40 md:bg-white/10 hover:bg-white/20 rounded-full transition-all block"
                     >
@@ -244,9 +246,9 @@ const Post = () => {
                 )}
 
                 {/* Next Button */}
-                {nextId && (
+                { (
                     <button
-                        onClick={() => goToPost(nextId)}
+                        onClick={handleNext}
                         // Change 'hidden md:block' to 'block'
                         className="fixed right-2 top-1/2 -translate-y-1/2 z-[60] p-1 bg-black/40 md:bg-white/10 hover:bg-white/20 rounded-full transition-all block"
                     >

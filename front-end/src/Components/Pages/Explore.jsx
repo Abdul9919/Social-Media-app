@@ -1,48 +1,51 @@
 import React from 'react';
-import { useInfiniteQuery } from '@tanstack/react-query';
-import axios from 'axios';
+// import { useInfiniteQuery } from '@tanstack/react-query';
+// import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../Navbar';
 import Spinner from '../Spinner';
 import {  useEffect } from 'react';
 import { AuthContext } from '../../Contexts/AuthContext';
 import { useInView } from 'react-intersection-observer';
+import Post from '../Post';
+import { usePostFeed } from '../../hooks/usePostFeed';
 
 const Explore = () => {
-  const token = localStorage.getItem('token');
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+  // const token = localStorage.getItem('token');
+  // const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
   // const { user } = useContext(AuthContext);
   const navigate = useNavigate();
   // const [posts, setPosts] = useState([]);
 
-  const { ref, inView } = useInView({ threshold: 0.1 });
-
-
-  const fetchExploreFeed = async ({pageParam = 1}) => {
-    console.log(pageParam)
-        const response = await axios.get(`${apiUrl}/api/posts/feed?page=${pageParam}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        // console.log('fetchingg')
-        return response.data;
-
-    };
+  const { ref, inView } = useInView();
   const { data,
     status,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useInfiniteQuery({
-    queryKey: ['explore'],
-    queryFn: fetchExploreFeed,
-    initialPageParam: 1,
-    getNextPageParam: (lastPage) => {
-      if (lastPage.nextPage && lastPage.nextPage !== 0) {
-            return lastPage.nextPage;
-        }
-        return undefined;
-    }
-  });
+  } = usePostFeed();
+
+
+  // const fetchExploreFeed = async ({pageParam = 1}) => {
+  //   console.log(pageParam)
+  //       const response = await axios.get(`${apiUrl}/api/posts/feed?page=${pageParam}`, {
+  //         headers: { Authorization: `Bearer ${token}` }
+  //       });
+  //       // console.log('fetchingg')
+  //       return response.data;
+
+  //   };
+  // = useInfiniteQuery({
+  //   queryKey: ['explore'],
+  //   queryFn: fetchExploreFeed,
+  //   initialPageParam: 1,
+  //   getNextPageParam: (lastPage) => {
+  //     if (lastPage.nextPage && lastPage.nextPage !== 0) {
+  //           return lastPage.nextPage;
+  //       }
+  //       return undefined;
+  //   }
+  // });
 
     useEffect(() => {
     // Only fetch if the element is in view AND there is actually a next page
@@ -81,9 +84,7 @@ const Explore = () => {
   if (status === 'error') return <div className="text-white text-center p-10">Failed to load feed.</div>;
 
   return (
-    /* 1. h-screen: Locks the main container to the height of the screen.
-       2. overflow-hidden: Prevents the whole body from scrolling.
-    */
+    <>
     <div className="flex flex-col md:flex-row h-screen w-full bg-black overflow-hidden">
 
       {/* Navbar Container 
@@ -150,6 +151,7 @@ const Explore = () => {
         </div>
       </main>
     </div>
+    </>
   );
 };
 

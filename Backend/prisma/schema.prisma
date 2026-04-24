@@ -82,6 +82,7 @@ model UserInterest {
 
   @@unique([userId, tagId]) // A user can only have one score per tag
   @@map("user_interests")
+  @@index([userId, score(sort: Desc)])
 }
 
 model Comment {
