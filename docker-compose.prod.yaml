@@ -45,6 +45,7 @@ services:
       REDIS_PORT: 6379
       RABBITMQ_URL: amqp://rabbitmq:5672
       DATABASE_URL: ${DATABASE_URL}
+      N8N_WEBHOOK_URL: ${N8N_WEBHOOK_URL}
     ports:
       - 5001:5000
     develop:
