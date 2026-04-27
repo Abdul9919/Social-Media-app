@@ -23,9 +23,9 @@ export default function CreatePost({ onClose }) {
 
     // User data (Parameterize for real ap
 
-    const handleFile = (file) => {
+    const handleFile = (file, e) => {
         if (!file || !(file.type.startsWith("image/") || file.type.startsWith("video/"))) return;
-
+        // console.log(e.target.files[0]);
         const type = file.type.startsWith("video/") ? "video" : "image";
         setFileType(type);
         setFilename(file.name);
@@ -81,6 +81,15 @@ export default function CreatePost({ onClose }) {
 
     const title = captioning ? "Create new post" : editing ? "Edit" : cropping ? "Crop" : preview ? "Edit photo" : "Create new post";
     // const modalWidth = (editing || captioning) ? "max-w-[800px]" : "max-w-[520px]";
+
+    const handleVideoLength = (e) => {
+        // console.log(e.target.duration);
+        const duration = e.target.duration;
+        if(duration > 40) {
+            setPreview(null);
+            alert('Cannot upload videos longer than 40 seconds');
+        }
+    }
 
 
         return (
@@ -184,7 +193,7 @@ export default function CreatePost({ onClose }) {
                                 type="file"
                                 accept="image/*,video/*"
                                 className="hidden"
-                                onChange={(e) => handleFile(e.target.files[0])}
+                                onChange={(e) => handleFile(e.target.files[0], e)}
                             />
                         </div>
                     ) : cropping && fileType === "image" ? (
@@ -209,6 +218,7 @@ export default function CreatePost({ onClose }) {
                             {fileType === "video" ? (
                                 <video
                                     src={preview}
+                                    onLoadedMetadata={(e) => handleVideoLength(e)}
                                     controls
                                     className="max-w-full max-h-full object-contain"
                                 />
