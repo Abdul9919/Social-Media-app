@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 const { client } = require('../Database/redis.js');
 const cloudinary = require('../config/cloudinary.js');
 const fs = require('fs/promises');
+const { publishToQueue } = require('../queue/producer.js');
 
 const registerUser = async (username, email, password) => {
     if (!username || !email || !password) {
@@ -29,9 +30,22 @@ const registerUser = async (username, email, password) => {
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
-
-    const newUser = { username, email, password: hashedPassword };
-    return await userRepository.createUser(newUser);
+    const user = {
+        username,
+        email,
+        password: hashedPassword
+    };
+    const newUser = await userRepository.createUser(user);
+    // console.log(newUser)
+    await publishToQueue('searchSync-queue', {
+        type: 'user',
+        data: {
+            id: newUser.rows[0].id,
+            username: newUser.rows[0].username,
+            bio: newUser.rows[0].bio
+        }
+    });
+    return newUser;
 };
 
 const loginUser = async (email, password, res) => {

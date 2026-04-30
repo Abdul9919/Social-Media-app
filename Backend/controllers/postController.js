@@ -226,6 +226,15 @@ const createPost = async (req, res) => {
       media_url: result.secure_url,
       description,
     });
+    await publishToQueue('searchSync-queue', {
+      type: 'post',
+      data: {
+        id: newPost.rows[0].id,
+        description: newPost.rows[0].description,
+        createdAt: newPost.rows[0].created_at,
+        userId: newPost.rows[0].user_id
+      }
+    });
 
     res.status(201).json(newPost.rows[0]);
   } catch (error) {

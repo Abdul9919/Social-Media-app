@@ -10,6 +10,15 @@ const client = new MeiliSearch({
 
 const BATCH_SIZE = 1000;
 
+// ─── Wait for task ────────────────────────────────────────────
+async function waitForTask(taskUid) {
+  while (true) {
+    const task = await client.tasks.getTask(taskUid);
+    if (task.status === 'succeeded') break;
+    if (task.status === 'failed') throw new Error(`Task failed: ${task.error.message}`);
+    await new Promise((res) => setTimeout(res, 500));
+  }
+}
 
 // ─── Sync Posts ───────────────────────────────────────────────
 async function syncPosts() {
@@ -26,28 +35,14 @@ async function syncPosts() {
         description: true,
         createdAt: true,
         userId: true,
-        // add or remove fields based on your schema
-      }
-
+      },
     });
-    // console.log(posts)
 
     if (posts.length === 0) break;
 
-    async function waitForTask(taskUid) {
-      while (true) {
-        const task = await client.tasks.getTask(taskUid);
-        if (task.status === 'succeeded') break;
-        if (task.status === 'failed') throw new Error(`Task failed: ${task.error.message}`);
-        await new Promise((res) => setTimeout(res, 500));
-      }
-    }
-
-    // Use it like this
     const result = await client.index('posts').addDocuments(posts, { primaryKey: 'id' });
     await waitForTask(result.taskUid);
-    console.log('✓ Posts fully indexed');
-    console.log(result)
+
     total += posts.length;
     console.log(`  ✓ ${total} posts synced`);
     page++;
@@ -70,13 +65,14 @@ async function syncUsers() {
         id: true,
         username: true,
         bio: true,
-        // ⚠️ Never select: password, token, email (unless you want it searchable)
       },
     });
 
     if (users.length === 0) break;
 
-    const result = await client.index('users').addDocuments(users);
+    const result = await client.index('users').addDocuments(users, { primaryKey: 'id' });
+    await waitForTask(result.taskUid);
+
     total += users.length;
     console.log(`  ✓ ${total} users synced`);
     page++;
@@ -85,12 +81,42 @@ async function syncUsers() {
   console.log(`  ✅ Users done! Total: ${total}`);
 }
 
+// ─── Sync Tags ────────────────────────────────────────────────
+async function syncTags() {
+  console.log('\n🏷️  Syncing tags...');
+  let page = 0;
+  let total = 0;
+
+  while (true) {
+    const tags = await prisma.tag.findMany({
+      skip: page * BATCH_SIZE,
+      take: BATCH_SIZE,
+      select: {
+        id: true,
+        name: true,        // adjust to match your schema
+      },
+    });
+
+    if (tags.length === 0) break;
+
+    const result = await client.index('tags').addDocuments(tags, { primaryKey: 'id' });
+    await waitForTask(result.taskUid);
+
+    total += tags.length;
+    console.log(`  ✓ ${total} tags synced`);
+    page++;
+  }
+
+  console.log(`  ✅ Tags done! Total: ${total}`);
+}
+
 // ─── Main ─────────────────────────────────────────────────────
 async function main() {
   console.log('🚀 Starting Meilisearch sync...');
 
   await syncPosts();
   await syncUsers();
+  await syncTags();
 
   console.log('\n🎉 All synced successfully!');
 }

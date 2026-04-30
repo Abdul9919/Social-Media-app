@@ -5,6 +5,8 @@ const { publisher } = require('../Database/redis.js');
 const postRepository = require('../repositories/postRepository.js');
 const userRepository = require('../repositories/userRepository.js');
 const axios = require('axios');
+const meilisearchClient = require('../config/meilisearch.js');
+const { publishToQueue } = require('../queue/producer.js');
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -119,25 +121,36 @@ const postTagWorker = async (queueName) => {
             }, { timeout: 90000 }); // 30s timeout for AI processing
 
             const tags = response.data.tags; // Expecting ["tag1", "tag2", ...]
-
+            let updatedPost;
             // 3. Update Database using the separate Tags table
             if (Array.isArray(tags) && tags.length > 0) {
                 console.log(`🏷️  Applying tags to DB: ${tags.join(', ')}`);
 
-                await prisma.post.update({
+                updatedPost = await prisma.post.update({
                     where: { id: postId },
                     data: {
                         tags: {
-                            // connectOrCreate ensures we don't create duplicate "react" tags
                             connectOrCreate: tags.map((tagName) => ({
                                 where: { name: tagName },
                                 create: { name: tagName },
                             })),
                         },
                     },
+                    include: { tags: true }, // 👈 include the actual tag objects in the response
                 });
 
+
                 console.log(`✅ Post ${postId} successfully tagged.`);
+                for (const tag of updatedPost.tags) {
+                    await publishToQueue('searchSync-queue', {
+                        type: 'tag',
+                        data: {
+                            id: tag.id,
+                            name: tag.name,
+                        },
+                    });
+                }
+
                 await sleep(4000);
             } else {
                 console.warn(`⚠️  No tags returned from n8n for Post ${postId}`);
@@ -158,10 +171,10 @@ const postTagWorker = async (queueName) => {
 };
 
 const userInterestsWorker = async (queueName) => {
-    const channel = getChannel(); 
+    const channel = getChannel();
     await channel.assertQueue(queueName, { durable: true });
 
-    channel.prefetch(10); 
+    channel.prefetch(10);
     console.log(`🧠 Interest Scoring worker started: ${queueName}`);
 
     channel.consume(queueName, async (msg) => {
@@ -171,7 +184,7 @@ const userInterestsWorker = async (queueName) => {
             const { userId, postId, type } = JSON.parse(msg.content.toString());
 
             const weights = {
-                'like': 0.15, 
+                'like': 0.15,
                 'view': 0.05,
                 'comment': 0.20
             };
@@ -201,9 +214,9 @@ const userInterestsWorker = async (queueName) => {
                 // Corrected where clause: explicitly naming userId and tagId
                 const existing = await prisma.userInterest.findUnique({
                     where: {
-                        userId_tagId: { 
-                            userId: targetUserId, 
-                            tagId: targetTagId 
+                        userId_tagId: {
+                            userId: targetUserId,
+                            tagId: targetTagId
                         }
                     }
                 });
@@ -213,14 +226,14 @@ const userInterestsWorker = async (queueName) => {
 
                 return prisma.userInterest.upsert({
                     where: {
-                        userId_tagId: { 
-                            userId: targetUserId, 
-                            tagId: targetTagId 
+                        userId_tagId: {
+                            userId: targetUserId,
+                            tagId: targetTagId
                         }
                     },
-                    update: { 
+                    update: {
                         score: newScore,
-                        updatedAt: new Date() 
+                        updatedAt: new Date()
                     },
                     create: {
                         userId: targetUserId,
@@ -231,7 +244,7 @@ const userInterestsWorker = async (queueName) => {
             });
 
             await Promise.all(updatePromises);
-            
+
             console.log(`✅ Updated ${post.tags.length} interests for User ${targetUserId}`);
             channel.ack(msg);
 
@@ -241,4 +254,39 @@ const userInterestsWorker = async (queueName) => {
         }
     });
 };
-module.exports = { notifWorker, postTagWorker, userInterestsWorker };
+
+const searchSyncWorker = async (queueName) => {
+    const channel = getChannel();
+    await channel.assertQueue(queueName, { durable: true });
+
+    channel.prefetch(1);
+    console.log(`Search Sync worker started: ${queueName}`);
+    const client = meilisearchClient;
+
+    channel.consume(queueName, async (msg) => {
+        if (!msg) return;
+
+        try {
+            const { type, data } = JSON.parse(msg.content.toString());
+            // console.log(JSON.parse(msg.content.toString()))
+            if (type === 'post') {
+                await client.index('posts').addDocuments(data);
+                // console.log(result)
+            } else if (type === 'user') {
+                await client.index('users').addDocuments(data);
+            }
+            else if (type === 'tag') {
+                await client.index('tags').addDocuments(data);
+            }
+            else {
+                console.warn(`Unknown search sync type: ${type}`);
+            }
+
+            channel.ack(msg);
+        } catch (error) {
+            console.error('Search Sync Worker Error:', error);
+            channel.nack(msg, false, true);
+        }
+    });
+}
+module.exports = { notifWorker, postTagWorker, userInterestsWorker, searchSyncWorker };
