@@ -46,6 +46,8 @@ services:
       RABBITMQ_URL: amqp://rabbitmq:5672
       DATABASE_URL: ${DATABASE_URL}
       N8N_WEBHOOK_URL: ${N8N_WEBHOOK_URL}
+      MEILI_HOST: ${MEILI_HOST}
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
     ports:
       - 5001:5000
     develop:
@@ -118,7 +120,19 @@ services:
       # Ensures your queues and data persist if the container restarts
       - rabbitmq_data:/var/lib/rabbitmq
 
+  meilisearch:
+    image: getmeili/meilisearch:latest
+    restart: always
+    ports:
+      - "7700:7700"
+    environment:
+      - MEILI_MASTER_KEY=${MEILI_MASTER_KEY}     # 👈 add this
+      - MEILI_ENV=production                       # 👈 and this
+    volumes:
+      - meilisearch_data:/data.ms
+
 volumes:
     db-data:
     redis-data:
     rabbitmq_data:
+    meilisearch_data:
