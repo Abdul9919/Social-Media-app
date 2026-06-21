@@ -249,6 +249,16 @@ const changeUserNameAndBio = async (userId, username, bio) => {
         await client.set(cacheKey, JSON.stringify(userCache), 'EX', 60*60);
     }
 
+    // Push updated user info to search sync queue
+    await publishToQueue('searchSync-queue', {
+        type: 'user',
+        data: {
+            id: userId,
+            username: username,
+            bio: bio
+        }
+    });
+
     return user
 }
 

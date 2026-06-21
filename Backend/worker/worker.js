@@ -9,6 +9,32 @@ const meilisearchClient = require('../config/meilisearch.js');
 const { publishToQueue } = require('../queue/producer.js');
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+const MAX_POST_TAG_RETRIES = 5;
+const TAG_RETRY_HEADER = 'x-post-tag-retry-count';
+
+const getRetryCount = (msg) => {
+    const headers = msg.properties?.headers;
+    const retryHeader = headers?.[TAG_RETRY_HEADER];
+    const retryCount = typeof retryHeader === 'string'
+        ? parseInt(retryHeader, 10)
+        : retryHeader;
+    return Number.isInteger(retryCount) ? retryCount : 0;
+};
+
+const requeuePostTagMessage = (channel, queueName, postData, currentRetryCount) => {
+    const nextRetryCount = currentRetryCount + 1;
+    channel.sendToQueue(
+        queueName,
+        Buffer.from(JSON.stringify(postData)),
+        {
+            persistent: true,
+            headers: {
+                [TAG_RETRY_HEADER]: nextRetryCount,
+            },
+        }
+    );
+    console.warn(`🔁 Re-queued Post ${postData?.postId} for retry ${nextRetryCount}/${MAX_POST_TAG_RETRIES}`);
+};
 
 async function notifWorker(queueName) {
     const channel = getChannel();
@@ -160,12 +186,27 @@ const postTagWorker = async (queueName) => {
             channel.ack(msg);
 
         } catch (error) {
-            console.error('❌ Error in Post Tag Worker:', error.message);
+            console.error('❌ Error in Post Tag Worker:', error.message || error);
 
-            /* Re-queueing logic: If n8n is down, put the message back in the queue.
-               The 'true' parameter as the 3rd argument tells RabbitMQ to re-queue.
-            */
-            channel.nack(msg, false, true);
+            const retryCount = getRetryCount(msg);
+            const postData = (() => {
+                try {
+                    return JSON.parse(msg.content.toString());
+                } catch {
+                    return null;
+                }
+            })();
+
+            if (retryCount >= MAX_POST_TAG_RETRIES || !postData) {
+                console.error(
+                    `⛔ Dropping Post Tag message for post ${postData?.postId ?? 'unknown'} after ${retryCount} retries`
+                );
+                channel.ack(msg);
+                return;
+            }
+
+            requeuePostTagMessage(channel, queueName, postData, retryCount);
+            channel.ack(msg);
         }
     });
 };
