@@ -13,7 +13,7 @@ const {connectRedis, client}= require('./Database/redis.js');
 const helmet = require('helmet');
 const { connectQueue } = require('./queue/connection.js');
 const { notifWorker, postTagWorker, userInterestsWorker, searchSyncWorker } = require('./worker/worker.js');
-
+const searchRoutes = require('./routes/searchRoutes.js');
 
 const app = express();
 app.use(helmet())
@@ -53,6 +53,7 @@ app.use('/api/posts', postRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/follow', followRoutes)
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/search', searchRoutes);
 
 initDB()
   .then(() => {

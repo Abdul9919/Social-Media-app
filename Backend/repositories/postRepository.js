@@ -58,9 +58,32 @@ const getPostIdMediaTypeUrl = async (postId) => {
     });
 };
 
+const getPostsByTagNames = async (tags) => {
+    if (!tags || tags.length === 0) {
+        return [];
+    }
+
+    const tagIds = tags.map((t) => t.id);
+
+    return await prisma.post.findMany({
+        where: {
+            tags: {
+                some: {
+                    id: { in: tagIds },
+                },
+            },
+        },
+        select: {
+            id: true,
+            mediaType: true,
+            mediaUrl: true,
+        },
+    });
+}
 module.exports = {
     getUserPosts,
     getPostComments,
     getLikeCount,
-    getPostIdMediaTypeUrl
+    getPostIdMediaTypeUrl,
+    getPostsByTagNames
 };
